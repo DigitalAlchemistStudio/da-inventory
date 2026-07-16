@@ -174,6 +174,52 @@
   #shipCard table input{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 6px;font-size:13px;}
   #shipCard select,#shipCard input#calcOz,#shipCard input#shipZone{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 8px;font-size:13px;}
   #shipCard .shipnote{color:var(--muted);font-size:11px;margin-top:8px;}
+  /* ---------- Responsive: iPad & iPhone ---------- */
+  @media(max-width:1024px){
+    .wrap{padding:20px 18px;}
+    header{padding:16px 20px;}
+    .card{padding:16px;}
+    header h1{font-size:20px;}
+  }
+  @media(max-width:680px){
+    header{padding:12px 14px;gap:10px;}
+    .brand{gap:10px;}
+    .brand img{height:40px;}
+    header h1{font-size:17px;}
+    .sub{font-size:11px;line-height:1.35;}
+    .wrap{padding:14px 12px;}
+    .card{padding:14px;border-radius:12px;margin-bottom:16px;}
+    .card h2{font-size:15px;}
+    .stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;}
+    .stat{padding:11px 12px;}
+    .stat .n{font-size:20px;}
+    .stat .l{font-size:11px;}
+    form,.grid{grid-template-columns:1fr;gap:11px;}
+    .prodgrid{grid-template-columns:1fr 1fr;max-height:44vh;}
+    .tabbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0;}
+    .tabbtn{padding:11px 14px;font-size:13px;white-space:nowrap;flex:0 0 auto;}
+    .toolbar{gap:8px;}
+    table{font-size:12px;min-width:680px;}
+    th,td{padding:7px 8px;}
+    .tablewrap{-webkit-overflow-scrolling:touch;}
+    .tmpl-grid{grid-template-columns:1fr;gap:12px;}
+    .tmpl-dl a{padding:10px 6px;}
+    .btn{padding:9px 12px;}
+    #shipCard table input{width:64px;}
+    #shipCard>summary{font-size:15px;}
+    footer{padding:16px 12px;}
+  }
+  @media(max-width:430px){
+    .brand img{height:34px;}
+    header h1{font-size:15px;}
+    .sub{font-size:10.5px;}
+    .stats{gap:8px;}
+    .stat .n{font-size:18px;}
+    .prodgrid{grid-template-columns:1fr;}
+  }
+  @media(max-width:360px){
+    .stats{grid-template-columns:1fr;}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
