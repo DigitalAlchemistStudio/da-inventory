@@ -135,6 +135,26 @@
   #toastWrap .toast.hide{animation:toastOut .2s ease-in forwards;}
   @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @keyframes toastOut{to{opacity:0;transform:translateY(10px);}}
+  /* --- tabs --- */
+  .tabbar{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
+    font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px;}
+  .tabbtn:hover{color:var(--text);background:var(--panel2);}
+  .tabbtn.active{color:var(--cyan);border-bottom-color:var(--accent);}
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;animation:tabIn .18s ease-out;}
+  @keyframes tabIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  .tmpl-cat{margin:20px 0 10px;font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;font-weight:700;}
+  .tmpl-cat.first{margin-top:0;}
+  .tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+  .tmpl-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:5px;}
+  .tmpl-card .nm{font-weight:700;color:var(--text);font-size:14px;}
+  .tmpl-card .dim{color:var(--accent2);font-size:12px;}
+  .tmpl-card .desc{color:var(--muted);font-size:12px;line-height:1.45;flex:1;margin:2px 0 4px;}
+  .tmpl-dl{display:flex;gap:8px;}
+  .tmpl-dl a{flex:1;text-align:center;text-decoration:none;background:var(--accent);color:#04121f;font-weight:700;font-size:12px;padding:8px 6px;border-radius:8px;letter-spacing:.3px;}
+  .tmpl-dl a.png{background:var(--panel);color:var(--accent2);border:1px solid var(--border);}
+  .tmpl-dl a:hover{filter:brightness(1.08);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -195,6 +215,11 @@
 </header>
 
 <div class="wrap">
+  <div class="tabbar">
+    <button class="tabbtn active" data-tab="manager" onclick="switchTab('manager')">Product Manager</button>
+    <button class="tabbtn" data-tab="templates" onclick="switchTab('templates')">Templates</button>
+  </div>
+  <div id="tab-manager" class="tabpanel active">
   <div class="stats" id="stats"></div>
 
   <div class="card mgr-only" style="border-color:var(--accent);">
@@ -423,6 +448,74 @@
         </thead>
         <tbody id="tbody"></tbody>
       </table>
+    </div>
+  </div>
+  </div><!-- /tab-manager -->
+
+  <div id="tab-templates" class="tabpanel">
+    <div class="card">
+      <h2>Product templates</h2>
+      <p class="sub" style="margin:-6px 0 4px;">Download a print-ready template, design inside the green <b>safe area</b> and extend art out to the red <b>bleed</b>, then attach your finished artwork when you submit a product. Grab the <b>PDF</b> for print/design software, or the <b>PNG</b> for a quick visual reference. Every template is 300&nbsp;DPI and CMYK-ready.</p>
+
+      <div class="tmpl-cat first">Stickers</div>
+      <div class="tmpl-grid">
+      <div class="tmpl-card">
+        <div class="nm">Die-Cut Sticker — 3&Prime;</div>
+        <div class="dim">3 &times; 3 in &bull; single cut</div>
+        <div class="desc">One custom-shaped sticker. Keep the cut line simple and bold; art bleeds to the edge.</div>
+        <div class="tmpl-dl"><a href="tmpl-sticker-diecut-3in.pdf" download>PDF</a><a class="png" href="tmpl-sticker-diecut-3in.png" download>PNG</a></div>
+      </div>
+      <div class="tmpl-card">
+        <div class="nm">Sticker Sheet</div>
+        <div class="dim">5.5 &times; 8.5 in &bull; kiss-cut cells</div>
+        <div class="desc">A full sheet with a suggested grid — drop individual designs into the cells.</div>
+        <div class="tmpl-dl"><a href="tmpl-sticker-sheet.pdf" download>PDF</a><a class="png" href="tmpl-sticker-sheet.png" download>PNG</a></div>
+      </div>
+      </div>
+
+      <div class="tmpl-cat">Acrylic goods</div>
+      <div class="tmpl-grid">
+      <div class="tmpl-card">
+        <div class="nm">Acrylic Charm / Keychain — 2&Prime;</div>
+        <div class="dim">2 &times; 2 in &bull; double-sided</div>
+        <div class="desc">Includes the hole marker and a 3mm outline reminder for the cut contour.</div>
+        <div class="tmpl-dl"><a href="tmpl-acrylic-charm-2in.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-charm-2in.png" download>PNG</a></div>
+      </div>
+      <div class="tmpl-card">
+        <div class="nm">Acrylic Standee</div>
+        <div class="dim">4 &times; 6 in &bull; figure + base</div>
+        <div class="desc">Figure panel plus a separate base with slot — prints and assembles as two pieces.</div>
+        <div class="tmpl-dl"><a href="tmpl-acrylic-standee.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-standee.png" download>PNG</a></div>
+      </div>
+      </div>
+
+      <div class="tmpl-cat">Apparel transfers</div>
+      <div class="tmpl-grid">
+      <div class="tmpl-card">
+        <div class="nm">Full-Front Transfer</div>
+        <div class="dim">11 &times; 14 in max</div>
+        <div class="desc">Large placement for shirts &amp; hoodies. Transparent background = no transfer film.</div>
+        <div class="tmpl-dl"><a href="tmpl-apparel-transfer-full.pdf" download>PDF</a><a class="png" href="tmpl-apparel-transfer-full.png" download>PNG</a></div>
+      </div>
+      <div class="tmpl-card">
+        <div class="nm">Left-Chest Transfer</div>
+        <div class="dim">4 &times; 4 in</div>
+        <div class="desc">Small logo/badge placement. Keep it clean at small size.</div>
+        <div class="tmpl-dl"><a href="tmpl-apparel-transfer-chest.pdf" download>PDF</a><a class="png" href="tmpl-apparel-transfer-chest.png" download>PNG</a></div>
+      </div>
+      </div>
+
+      <div class="tmpl-cat">Pins &amp; small merch</div>
+      <div class="tmpl-grid">
+      <div class="tmpl-card">
+        <div class="nm">Enamel Pin — 1.5&Prime;</div>
+        <div class="dim">1.5 in &bull; bold outlines</div>
+        <div class="desc">Use one flat color per enclosed area and thick outlines — fine detail is lost in metal.</div>
+        <div class="tmpl-dl"><a href="tmpl-pin-1-5in.pdf" download>PDF</a><a class="png" href="tmpl-pin-1-5in.png" download>PNG</a></div>
+      </div>
+      </div>
+
+      <p class="sub" style="margin-top:20px;font-size:12px;">More sizes coming soon. Need a specific dimension? Ask a manager to add it.</p>
     </div>
   </div>
 </div>
@@ -1343,6 +1436,14 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
   if(!(it.artistApproved && it.managerApproved)){ alert('Need both artist and manager approval first.'); return; }
   it.status='in_production'; save(); if(typeof render==='function') render();
 };
+</script>
+<script>
+  function switchTab(name){
+    document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.toggle('active', p.id==='tab-'+name); });
+    document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name); });
+    try{ localStorage.setItem('daTab', name); }catch(e){}
+    window.scrollTo(0,0);
+  }
 </script>
 <script>
 (function(){
