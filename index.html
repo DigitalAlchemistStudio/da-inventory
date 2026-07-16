@@ -121,6 +121,20 @@
   .img-preview{max-width:130px;max-height:130px;object-fit:contain;border:1px solid #ddd;border-radius:6px;background:#fff;padding:2px;display:block;margin-bottom:6px;}
   #skuBarcode svg{max-width:240px;height:auto;}
   body.not-manager .mgr-only{display:none !important;}
+  /* --- in-page toasts (non-blocking replacement for alert()) --- */
+  #toastWrap{position:fixed;right:18px;bottom:18px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:340px;pointer-events:none;}
+  #toastWrap .toast{pointer-events:auto;background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--accent);
+    border-radius:10px;padding:12px 14px;color:var(--text);font-size:13px;line-height:1.45;
+    box-shadow:0 10px 28px rgba(0,0,0,.4);display:flex;align-items:flex-start;gap:10px;animation:toastIn .18s ease-out;}
+  #toastWrap .toast.good{border-left-color:var(--good);}
+  #toastWrap .toast.bad{border-left-color:var(--bad);}
+  #toastWrap .toast.warn{border-left-color:var(--warn);}
+  #toastWrap .toast .msg{flex:1;word-break:break-word;}
+  #toastWrap .toast .x{cursor:pointer;color:var(--muted);font-weight:700;line-height:1;padding:0 2px;}
+  #toastWrap .toast .x:hover{color:var(--text);}
+  #toastWrap .toast.hide{animation:toastOut .2s ease-in forwards;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @keyframes toastOut{to{opacity:0;transform:translateY(10px);}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1329,6 +1343,25 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
   if(!(it.artistApproved && it.managerApproved)){ alert('Need both artist and manager approval first.'); return; }
   it.status='in_production'; save(); if(typeof render==='function') render();
 };
+</script>
+<script>
+(function(){
+  function wrap(){ var w=document.getElementById('toastWrap'); if(!w){ w=document.createElement('div'); w.id='toastWrap'; document.body.appendChild(w);} return w; }
+  function classify(m){ m=(m||'').toLowerCase();
+    if(/error|fail|could not|couldn't|storage is full|no stored|no designs|nothing|need both|allow pop|no sku|no artist|no data/.test(m)) return 'bad';
+    if(/added|complete|saved|success/.test(m)) return 'good';
+    return 'info'; }
+  window.showToast=function(msg,type,ms){
+    msg=String(msg==null?'':msg); type=type||classify(msg);
+    var w=wrap(), t=document.createElement('div'); t.className='toast '+type;
+    var s=document.createElement('div'); s.className='msg'; s.textContent=msg;
+    var x=document.createElement('div'); x.className='x'; x.textContent='\u00d7';
+    function close(){ if(t._c) return; t._c=1; t.classList.add('hide'); setTimeout(function(){ t.remove(); },220); }
+    x.onclick=close; t.appendChild(s); t.appendChild(x); w.appendChild(t);
+    setTimeout(close, ms || (type==='bad'?7000:4500)); return t; };
+  /* Route blocking native alert() through the non-blocking toast */
+  window.alert=function(m){ try{ window.showToast(m); }catch(e){ console.log('toast',m); } };
+})();
 </script>
 </body>
 </html>
