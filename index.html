@@ -155,6 +155,13 @@
   .tmpl-dl a{flex:1;text-align:center;text-decoration:none;background:var(--accent);color:#04121f;font-weight:700;font-size:12px;padding:8px 6px;border-radius:8px;letter-spacing:.3px;}
   .tmpl-dl a.png{background:var(--panel);color:var(--accent2);border:1px solid var(--border);}
   .tmpl-dl a:hover{filter:brightness(1.08);}
+  .tmpl-card .fits{color:var(--muted);font-size:11.5px;line-height:1.4;}
+  .tmpl-card .fits b{color:var(--accent2);font-weight:700;}
+  .tmpl-dl{flex-wrap:wrap;gap:6px;}
+  .tmpl-dl a{flex:1 1 28%;min-width:54px;cursor:pointer;}
+  .tmpl-dl a.alt{background:var(--blue);color:#eaf4ff;}
+  .tmpl-dl a.pending{background:transparent;color:var(--muted);border:1px dashed var(--border);font-weight:600;}
+  .tmpl-dl a.pending:hover{color:var(--accent2);border-color:var(--accent2);filter:none;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -455,67 +462,268 @@
   <div id="tab-templates" class="tabpanel">
     <div class="card">
       <h2>Product templates</h2>
-      <p class="sub" style="margin:-6px 0 4px;">Download a print-ready template, design inside the green <b>safe area</b> and extend art out to the red <b>bleed</b>, then attach your finished artwork when you submit a product. Grab the <b>PDF</b> for print/design software, or the <b>PNG</b> for a quick visual reference. Every template is 300&nbsp;DPI and CMYK-ready.</p>
-
-      <div class="tmpl-cat first">Stickers</div>
+      <p class="sub" style="margin:-6px 0 10px;">Download a print-ready template in your format of choice, design inside the green <b>safe area</b> and extend art out to the red <b>bleed</b>, then attach your finished artwork when you submit a product. Every template is 300&nbsp;DPI and CMYK-ready. The <b>Fits</b> line shows which products &amp; sizes each one covers. <b>Affinity</b> &amp; <b>CSP</b> masters are supplied by a manager — those buttons activate once the file is uploaded.</p>
+      <div class="tmpl-cat first">Stickers &amp; Decals</div>
       <div class="tmpl-grid">
-      <div class="tmpl-card">
-        <div class="nm">Die-Cut Sticker — 3&Prime;</div>
-        <div class="dim">3 &times; 3 in &bull; single cut</div>
-        <div class="desc">One custom-shaped sticker. Keep the cut line simple and bold; art bleeds to the edge.</div>
-        <div class="tmpl-dl"><a href="tmpl-sticker-diecut-3in.pdf" download>PDF</a><a class="png" href="tmpl-sticker-diecut-3in.png" download>PNG</a></div>
-      </div>
-      <div class="tmpl-card">
-        <div class="nm">Sticker Sheet</div>
-        <div class="dim">5.5 &times; 8.5 in &bull; kiss-cut cells</div>
-        <div class="desc">A full sheet with a suggested grid — drop individual designs into the cells.</div>
-        <div class="tmpl-dl"><a href="tmpl-sticker-sheet.pdf" download>PDF</a><a class="png" href="tmpl-sticker-sheet.png" download>PNG</a></div>
-      </div>
+        <div class="tmpl-card">
+          <div class="nm">Die-Cut Sticker / Decal</div>
+          <div class="dim">up to 6 in • single die-cut</div>
+          <div class="desc">One custom-shaped sticker, decal, peeker, puffy or magnet. Keep the cut simple; bleed art to the edge.</div>
+          <div class="fits"><b>Fits:</b> Vinyl Sticker, Decal / Peeker, Puffy Sticker, Suncatcher Sticker, Fridge Magnet</div>
+          <div class="fits"><b>Sizes:</b> 2, 3, 4, 5, 6 in</div>
+          <div class="tmpl-dl"><a href="tmpl-sticker-diecut.pdf" download>PDF</a><a class="png" href="tmpl-sticker-diecut.png" download>PNG</a><a class="alt" href="tmpl-sticker-diecut.psd" download>PSD</a><a class="alt" href="tmpl-sticker-diecut.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-sticker-diecut','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-sticker-diecut','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Sticker Sheet / Book</div>
+          <div class="dim">A6 / A5 sheet • kiss-cut</div>
+          <div class="desc">Full sheet with a suggested grid — arrange individual designs inside the cells.</div>
+          <div class="fits"><b>Fits:</b> Sticker Sheet, Sticker Book</div>
+          <div class="fits"><b>Sizes:</b> A6, A5</div>
+          <div class="tmpl-dl"><a href="tmpl-sticker-sheet.pdf" download>PDF</a><a class="png" href="tmpl-sticker-sheet.png" download>PNG</a><a class="alt" href="tmpl-sticker-sheet.psd" download>PSD</a><a class="alt" href="tmpl-sticker-sheet.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-sticker-sheet','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-sticker-sheet','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Washi Tape (seamless)</div>
+          <div class="dim">10 / 15 / 30 mm • repeats</div>
+          <div class="desc">Design one tile that repeats left-to-right seamlessly. Match art at both ends.</div>
+          <div class="fits"><b>Fits:</b> Washi Tape</div>
+          <div class="fits"><b>Sizes:</b> 10, 15, 30 mm</div>
+          <div class="tmpl-dl"><a href="tmpl-washi-tape.pdf" download>PDF</a><a class="png" href="tmpl-washi-tape.png" download>PNG</a><a class="alt" href="tmpl-washi-tape.psd" download>PSD</a><a class="alt" href="tmpl-washi-tape.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-washi-tape','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-washi-tape','clip')">CSP</a></div>
+        </div>
       </div>
 
-      <div class="tmpl-cat">Acrylic goods</div>
+      <div class="tmpl-cat">Prints &amp; Paper</div>
       <div class="tmpl-grid">
-      <div class="tmpl-card">
-        <div class="nm">Acrylic Charm / Keychain — 2&Prime;</div>
-        <div class="dim">2 &times; 2 in &bull; double-sided</div>
-        <div class="desc">Includes the hole marker and a 3mm outline reminder for the cut contour.</div>
-        <div class="tmpl-dl"><a href="tmpl-acrylic-charm-2in.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-charm-2in.png" download>PNG</a></div>
-      </div>
-      <div class="tmpl-card">
-        <div class="nm">Acrylic Standee</div>
-        <div class="dim">4 &times; 6 in &bull; figure + base</div>
-        <div class="desc">Figure panel plus a separate base with slot — prints and assembles as two pieces.</div>
-        <div class="tmpl-dl"><a href="tmpl-acrylic-standee.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-standee.png" download>PNG</a></div>
-      </div>
+        <div class="tmpl-card">
+          <div class="nm">Art Print &amp; Poster</div>
+          <div class="dim">8x10 up to 24x36 in</div>
+          <div class="desc">Flat wall art. Extend background to the bleed; keep signatures inside the safe line.</div>
+          <div class="fits"><b>Fits:</b> Art Print, Poster</div>
+          <div class="fits"><b>Sizes:</b> 8x10, 11x14, 11x17, 13x19, 18x24, 24x36 in</div>
+          <div class="tmpl-dl"><a href="tmpl-art-print.pdf" download>PDF</a><a class="png" href="tmpl-art-print.png" download>PNG</a><a class="alt" href="tmpl-art-print.psd" download>PSD</a><a class="alt" href="tmpl-art-print.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-art-print','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-art-print','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Trading / Tarot / Greeting / Business Card</div>
+          <div class="dim">card bleed + safe</div>
+          <div class="desc">Rounded-corner card stock. Rounded cut varies by finish — respect the safe area.</div>
+          <div class="fits"><b>Fits:</b> Trading / Holo Card, Game / Tarot Card, Lenticular Card, Greeting / Post Card, Business Card</div>
+          <div class="fits"><b>Sizes:</b> 2.5x3.5, tarot, greeting, business</div>
+          <div class="tmpl-dl"><a href="tmpl-cards.pdf" download>PDF</a><a class="png" href="tmpl-cards.png" download>PNG</a><a class="alt" href="tmpl-cards.psd" download>PSD</a><a class="alt" href="tmpl-cards.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-cards','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-cards','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Paper Pads &amp; Books</div>
+          <div class="dim">memo / notebook / book / shikishi</div>
+          <div class="desc">Bound &amp; padded paper goods. Leave a gutter/binding margin on the spine edge.</div>
+          <div class="fits"><b>Fits:</b> Memo Pad, Sticky Notes, Notebook, Book, Shikishi Board</div>
+          <div class="fits"><b>Sizes:</b> varies by item</div>
+          <div class="tmpl-dl"><a href="tmpl-paper-goods.pdf" download>PDF</a><a class="png" href="tmpl-paper-goods.png" download>PNG</a><a class="alt" href="tmpl-paper-goods.psd" download>PSD</a><a class="alt" href="tmpl-paper-goods.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-paper-goods','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-paper-goods','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Bookmark</div>
+          <div class="dim">2x6 / 2.5x7 in</div>
+          <div class="desc">Tall thin format with an optional tassel hole up top.</div>
+          <div class="fits"><b>Fits:</b> Bookmark</div>
+          <div class="fits"><b>Sizes:</b> 2x6, 2.5x7 in</div>
+          <div class="tmpl-dl"><a href="tmpl-bookmark.pdf" download>PDF</a><a class="png" href="tmpl-bookmark.png" download>PNG</a><a class="alt" href="tmpl-bookmark.psd" download>PSD</a><a class="alt" href="tmpl-bookmark.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-bookmark','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-bookmark','clip')">CSP</a></div>
+        </div>
       </div>
 
-      <div class="tmpl-cat">Apparel transfers</div>
+      <div class="tmpl-cat">Acrylic &amp; Charms</div>
       <div class="tmpl-grid">
-      <div class="tmpl-card">
-        <div class="nm">Full-Front Transfer</div>
-        <div class="dim">11 &times; 14 in max</div>
-        <div class="desc">Large placement for shirts &amp; hoodies. Transparent background = no transfer film.</div>
-        <div class="tmpl-dl"><a href="tmpl-apparel-transfer-full.pdf" download>PDF</a><a class="png" href="tmpl-apparel-transfer-full.png" download>PNG</a></div>
-      </div>
-      <div class="tmpl-card">
-        <div class="nm">Left-Chest Transfer</div>
-        <div class="dim">4 &times; 4 in</div>
-        <div class="desc">Small logo/badge placement. Keep it clean at small size.</div>
-        <div class="tmpl-dl"><a href="tmpl-apparel-transfer-chest.pdf" download>PDF</a><a class="png" href="tmpl-apparel-transfer-chest.png" download>PNG</a></div>
-      </div>
+        <div class="tmpl-card">
+          <div class="nm">Acrylic Charm / Keychain</div>
+          <div class="dim">1–4 in • double-sided</div>
+          <div class="desc">Die-cut charm. Add a 3 mm outline for the cut contour; include front &amp; back art.</div>
+          <div class="fits"><b>Fits:</b> Acrylic Charm / Keychain, PVC Rubber Charm, Wooden Keychain, Metal Keychain, Plush Keychain</div>
+          <div class="fits"><b>Sizes:</b> 1, 1.5, 2, 2.5, 3, 3.5, 4 in</div>
+          <div class="tmpl-dl"><a href="tmpl-acrylic-charm.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-charm.png" download>PNG</a><a class="alt" href="tmpl-acrylic-charm.psd" download>PSD</a><a class="alt" href="tmpl-acrylic-charm.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-acrylic-charm','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-acrylic-charm','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Acrylic Standee</div>
+          <div class="dim">figure + base</div>
+          <div class="desc">Figure panel plus a separate base with slot — prints and assembles as two pieces.</div>
+          <div class="fits"><b>Fits:</b> Acrylic Standee</div>
+          <div class="fits"><b>Sizes:</b> by height</div>
+          <div class="tmpl-dl"><a href="tmpl-acrylic-standee.pdf" download>PDF</a><a class="png" href="tmpl-acrylic-standee.png" download>PNG</a><a class="alt" href="tmpl-acrylic-standee.psd" download>PSD</a><a class="alt" href="tmpl-acrylic-standee.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-acrylic-standee','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-acrylic-standee','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Shaker / Quicksand Charm</div>
+          <div class="dim">sealed inner window</div>
+          <div class="desc">Outer cut plus an inner sealed window that holds the shaker fill — keep key art outside the window.</div>
+          <div class="fits"><b>Fits:</b> Shaker Charm, Quicksand Charm</div>
+          <div class="fits"><b>Sizes:</b> 2.5, 3, 3.5, 4 in</div>
+          <div class="tmpl-dl"><a href="tmpl-shaker-charm.pdf" download>PDF</a><a class="png" href="tmpl-shaker-charm.png" download>PNG</a><a class="alt" href="tmpl-shaker-charm.psd" download>PSD</a><a class="alt" href="tmpl-shaker-charm.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-shaker-charm','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-shaker-charm','clip')">CSP</a></div>
+        </div>
       </div>
 
-      <div class="tmpl-cat">Pins &amp; small merch</div>
+      <div class="tmpl-cat">Pins &amp; Badges</div>
       <div class="tmpl-grid">
-      <div class="tmpl-card">
-        <div class="nm">Enamel Pin — 1.5&Prime;</div>
-        <div class="dim">1.5 in &bull; bold outlines</div>
-        <div class="desc">Use one flat color per enclosed area and thick outlines — fine detail is lost in metal.</div>
-        <div class="tmpl-dl"><a href="tmpl-pin-1-5in.pdf" download>PDF</a><a class="png" href="tmpl-pin-1-5in.png" download>PNG</a></div>
-      </div>
+        <div class="tmpl-card">
+          <div class="nm">Enamel / Metal / Wooden / Acrylic Pin</div>
+          <div class="dim">1–2.5 in</div>
+          <div class="desc">Use one flat color per enclosed area with bold outlines — fine detail is lost in metal.</div>
+          <div class="fits"><b>Fits:</b> Hard Enamel Pin, Soft Enamel Pin, Wooden Pin, Acrylic Pin</div>
+          <div class="fits"><b>Sizes:</b> 1, 1.5, 2, 2.5 in</div>
+          <div class="tmpl-dl"><a href="tmpl-enamel-pin.pdf" download>PDF</a><a class="png" href="tmpl-enamel-pin.png" download>PNG</a><a class="alt" href="tmpl-enamel-pin.psd" download>PSD</a><a class="alt" href="tmpl-enamel-pin.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-enamel-pin','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-enamel-pin','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Button / Badge Reel</div>
+          <div class="dim">full-bleed round</div>
+          <div class="desc">Round pin-back button or badge reel. Art must bleed past the cut — the edge wraps around.</div>
+          <div class="fits"><b>Fits:</b> Button / Badge, Badge Reel</div>
+          <div class="fits"><b>Sizes:</b> 1.25, 2.25, 3.25 in</div>
+          <div class="tmpl-dl"><a href="tmpl-button-badge.pdf" download>PDF</a><a class="png" href="tmpl-button-badge.png" download>PNG</a><a class="alt" href="tmpl-button-badge.psd" download>PSD</a><a class="alt" href="tmpl-button-badge.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-button-badge','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-button-badge','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Patch</div>
+          <div class="dim">embroidered / woven</div>
+          <div class="desc">Keep shapes bold and outlines thick; small text and thin lines won&#x27;t stitch cleanly.</div>
+          <div class="fits"><b>Fits:</b> Patch</div>
+          <div class="fits"><b>Sizes:</b> 2, 3, 4 in</div>
+          <div class="tmpl-dl"><a href="tmpl-patch.pdf" download>PDF</a><a class="png" href="tmpl-patch.png" download>PNG</a><a class="alt" href="tmpl-patch.psd" download>PSD</a><a class="alt" href="tmpl-patch.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-patch','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-patch','clip')">CSP</a></div>
+        </div>
       </div>
 
-      <p class="sub" style="margin-top:20px;font-size:12px;">More sizes coming soon. Need a specific dimension? Ask a manager to add it.</p>
+      <div class="tmpl-cat">Apparel</div>
+      <div class="tmpl-grid">
+        <div class="tmpl-card">
+          <div class="nm">Apparel Print — Full Front / Back</div>
+          <div class="dim">11x14 in max area</div>
+          <div class="desc">Large placement for shirts, hoodies &amp; jackets. Transparent background = no transfer film.</div>
+          <div class="fits"><b>Fits:</b> Shirts / Tees, Sweatshirts, Hoodies, Hockey Hoodies, Zip-Up Hoodies, Longsleeve Shirts, Tank Tops, Jackets</div>
+          <div class="fits"><b>Sizes:</b> Garment XS–3XL</div>
+          <div class="tmpl-dl"><a href="tmpl-apparel-full.pdf" download>PDF</a><a class="png" href="tmpl-apparel-full.png" download>PNG</a><a class="alt" href="tmpl-apparel-full.psd" download>PSD</a><a class="alt" href="tmpl-apparel-full.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-apparel-full','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-apparel-full','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Apparel Print — Left Chest / Small</div>
+          <div class="dim">4x4 in placement</div>
+          <div class="desc">Small logo / badge placement over the chest. Keep it clean and legible at size.</div>
+          <div class="fits"><b>Fits:</b> Shirts / Tees, Sweatshirts, Hoodies, Hockey Hoodies, Zip-Up Hoodies, Longsleeve Shirts, Tank Tops, Jackets</div>
+          <div class="fits"><b>Sizes:</b> Garment XS–3XL</div>
+          <div class="tmpl-dl"><a href="tmpl-apparel-chest.pdf" download>PDF</a><a class="png" href="tmpl-apparel-chest.png" download>PNG</a><a class="alt" href="tmpl-apparel-chest.psd" download>PSD</a><a class="alt" href="tmpl-apparel-chest.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-apparel-chest','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-apparel-chest','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Headwear (Cap / Hat)</div>
+          <div class="dim">curved front panel</div>
+          <div class="desc">Cap front panel. Keep art centered and shallow — the crown curves away at the top.</div>
+          <div class="fits"><b>Fits:</b> Hats / Caps</div>
+          <div class="fits"><b>Sizes:</b> one size</div>
+          <div class="tmpl-dl"><a href="tmpl-headwear.pdf" download>PDF</a><a class="png" href="tmpl-headwear.png" download>PNG</a><a class="alt" href="tmpl-headwear.psd" download>PSD</a><a class="alt" href="tmpl-headwear.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-headwear','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-headwear','clip')">CSP</a></div>
+        </div>
+      </div>
+
+      <div class="tmpl-cat">Bags &amp; Soft Goods</div>
+      <div class="tmpl-grid">
+        <div class="tmpl-card">
+          <div class="nm">Bags &amp; Pouches</div>
+          <div class="dim">tote / pouch / backpack</div>
+          <div class="desc">Print-area guide for totes, pouches, coin purses &amp; backpacks. Mind seams and zippers at edges.</div>
+          <div class="fits"><b>Fits:</b> Tote Bags, Bucket Bag, Drawstring Backpack, Zipper Pouch, Coin Purse, Pencil Cases</div>
+          <div class="fits"><b>Sizes:</b> varies by bag</div>
+          <div class="tmpl-dl"><a href="tmpl-bags.pdf" download>PDF</a><a class="png" href="tmpl-bags.png" download>PNG</a><a class="alt" href="tmpl-bags.psd" download>PSD</a><a class="alt" href="tmpl-bags.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-bags','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-bags','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Mousepad / Desk Mat</div>
+          <div class="dim">standard / 3D / RGB</div>
+          <div class="desc">Full-surface print with rounded corners. Bleed art to the stitched edge.</div>
+          <div class="fits"><b>Fits:</b> Mousepads, 3D Mousepads, RGB Mousepads</div>
+          <div class="fits"><b>Sizes:</b> standard, XL desk mat</div>
+          <div class="tmpl-dl"><a href="tmpl-mousepad.pdf" download>PDF</a><a class="png" href="tmpl-mousepad.png" download>PNG</a><a class="alt" href="tmpl-mousepad.psd" download>PSD</a><a class="alt" href="tmpl-mousepad.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-mousepad','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-mousepad','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Scarf (all-over)</div>
+          <div class="dim">all-over repeat</div>
+          <div class="desc">All-over fabric print. Design to the full bleed; borders should be intentional.</div>
+          <div class="fits"><b>Fits:</b> Silk Scarf</div>
+          <div class="fits"><b>Sizes:</b> one size</div>
+          <div class="tmpl-dl"><a href="tmpl-scarf.pdf" download>PDF</a><a class="png" href="tmpl-scarf.png" download>PNG</a><a class="alt" href="tmpl-scarf.psd" download>PSD</a><a class="alt" href="tmpl-scarf.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-scarf','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-scarf','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Lanyard (repeat strip)</div>
+          <div class="dim">0.75 in wide • repeats</div>
+          <div class="desc">Long thin strip that repeats along its length — art runs both directions on the strap.</div>
+          <div class="fits"><b>Fits:</b> Lanyards</div>
+          <div class="fits"><b>Sizes:</b> one size</div>
+          <div class="tmpl-dl"><a href="tmpl-lanyard.pdf" download>PDF</a><a class="png" href="tmpl-lanyard.png" download>PNG</a><a class="alt" href="tmpl-lanyard.psd" download>PSD</a><a class="alt" href="tmpl-lanyard.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-lanyard','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-lanyard','clip')">CSP</a></div>
+        </div>
+      </div>
+
+      <div class="tmpl-cat">Accessories</div>
+      <div class="tmpl-grid">
+        <div class="tmpl-card">
+          <div class="nm">Jewelry &amp; Hair Accessories</div>
+          <div class="dim">earrings / bracelet / necklace / hair</div>
+          <div class="desc">Small die-cut pieces for earrings, pendants, clips &amp; scrunchie charms. Include the fitting hole.</div>
+          <div class="fits"><b>Fits:</b> Earrings, Bracelet, Necklace / Pendant, Hair Clip, Hair Tie / Scrunchie</div>
+          <div class="fits"><b>Sizes:</b> small • varies</div>
+          <div class="tmpl-dl"><a href="tmpl-jewelry-hair.pdf" download>PDF</a><a class="png" href="tmpl-jewelry-hair.png" download>PNG</a><a class="alt" href="tmpl-jewelry-hair.psd" download>PSD</a><a class="alt" href="tmpl-jewelry-hair.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-jewelry-hair','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-jewelry-hair','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Phone Case</div>
+          <div class="dim">camera cutout guide</div>
+          <div class="desc">Wrap-around case art. Keep key art clear of the camera cutout and edges.</div>
+          <div class="fits"><b>Fits:</b> Phone Case</div>
+          <div class="fits"><b>Sizes:</b> by model</div>
+          <div class="tmpl-dl"><a href="tmpl-phone-case.pdf" download>PDF</a><a class="png" href="tmpl-phone-case.png" download>PNG</a><a class="alt" href="tmpl-phone-case.psd" download>PSD</a><a class="alt" href="tmpl-phone-case.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-phone-case','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-phone-case','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Phone Grip / Strap</div>
+          <div class="dim">grip disc / strap charm</div>
+          <div class="desc">Round grip face or small strap charm. Center the art; edges may be trimmed.</div>
+          <div class="fits"><b>Fits:</b> Phone Grip, Phone Strap</div>
+          <div class="fits"><b>Sizes:</b> one size</div>
+          <div class="tmpl-dl"><a href="tmpl-phone-acc.pdf" download>PDF</a><a class="png" href="tmpl-phone-acc.png" download>PNG</a><a class="alt" href="tmpl-phone-acc.psd" download>PSD</a><a class="alt" href="tmpl-phone-acc.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-phone-acc','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-phone-acc','clip')">CSP</a></div>
+        </div>
+      </div>
+
+      <div class="tmpl-cat">Home &amp; Living</div>
+      <div class="tmpl-grid">
+        <div class="tmpl-card">
+          <div class="nm">Pillow / Daki / Blanket / Tapestry</div>
+          <div class="dim">large all-over fabric</div>
+          <div class="desc">Large fabric prints. Design edge-to-edge; keep faces &amp; focal art well inside the safe line.</div>
+          <div class="fits"><b>Fits:</b> Throw Pillow, Dakimakura, Blanket, Tapestry</div>
+          <div class="fits"><b>Sizes:</b> varies by item</div>
+          <div class="tmpl-dl"><a href="tmpl-home-fabric.pdf" download>PDF</a><a class="png" href="tmpl-home-fabric.png" download>PNG</a><a class="alt" href="tmpl-home-fabric.psd" download>PSD</a><a class="alt" href="tmpl-home-fabric.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-home-fabric','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-home-fabric','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Coaster</div>
+          <div class="dim">round or square</div>
+          <div class="desc">Small drinkware coaster. Bleed to the edge; center the focal art.</div>
+          <div class="fits"><b>Fits:</b> Coaster</div>
+          <div class="fits"><b>Sizes:</b> ~4 in</div>
+          <div class="tmpl-dl"><a href="tmpl-coaster.pdf" download>PDF</a><a class="png" href="tmpl-coaster.png" download>PNG</a><a class="alt" href="tmpl-coaster.psd" download>PSD</a><a class="alt" href="tmpl-coaster.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-coaster','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-coaster','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Sleep Mask</div>
+          <div class="dim">eye-mask shape</div>
+          <div class="desc">Wide eye-mask shape with a nose notch at the bottom center. Bleed to the edge.</div>
+          <div class="fits"><b>Fits:</b> Sleep Mask</div>
+          <div class="fits"><b>Sizes:</b> one size</div>
+          <div class="tmpl-dl"><a href="tmpl-sleep-mask.pdf" download>PDF</a><a class="png" href="tmpl-sleep-mask.png" download>PNG</a><a class="alt" href="tmpl-sleep-mask.psd" download>PSD</a><a class="alt" href="tmpl-sleep-mask.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-sleep-mask','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-sleep-mask','clip')">CSP</a></div>
+        </div>
+      </div>
+
+      <div class="tmpl-cat">3D &amp; Digital</div>
+      <div class="tmpl-grid">
+        <div class="tmpl-card">
+          <div class="nm">3D Turnaround / Reference Sheet</div>
+          <div class="dim">front • side • back</div>
+          <div class="desc">Reference sheet for plushies &amp; 3D models — draw the character front, side and back to scale.</div>
+          <div class="fits"><b>Fits:</b> 3D Model, Plushie</div>
+          <div class="fits"><b>Sizes:</b> plush 7.5–20 cm; 3D model</div>
+          <div class="tmpl-dl"><a href="tmpl-turnaround-3d.pdf" download>PDF</a><a class="png" href="tmpl-turnaround-3d.png" download>PNG</a><a class="alt" href="tmpl-turnaround-3d.psd" download>PSD</a><a class="alt" href="tmpl-turnaround-3d.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-turnaround-3d','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-turnaround-3d','clip')">CSP</a></div>
+        </div>
+        <div class="tmpl-card">
+          <div class="nm">Digital Assets (Brushes / Tutorials)</div>
+          <div class="dim">delivered as source files</div>
+          <div class="desc">No print dieline — brushes &amp; tutorials ship as native source files. Use this sheet for cover art &amp; specs.</div>
+          <div class="fits"><b>Fits:</b> Brushes, Tutorials</div>
+          <div class="fits"><b>Sizes:</b> digital</div>
+          <div class="tmpl-dl"><a href="tmpl-digital-assets.pdf" download>PDF</a><a class="png" href="tmpl-digital-assets.png" download>PNG</a><a class="alt" href="tmpl-digital-assets.psd" download>PSD</a><a class="alt" href="tmpl-digital-assets.ai" download>AI</a><a class="pending" onclick="tdl('tmpl-digital-assets','afdesign')">Affinity</a><a class="pending" onclick="tdl('tmpl-digital-assets','clip')">CSP</a></div>
+        </div>
+      </div>
+
+      <p class="sub" style="margin-top:18px;font-size:12px;">One template covers every product that shares the same cut or print area. Need a size or product that isn’t here? Ask a manager to add it.</p>
     </div>
   </div>
 </div>
@@ -1443,6 +1651,13 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
     document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name); });
     try{ localStorage.setItem('daTab', name); }catch(e){}
     window.scrollTo(0,0);
+  }
+  function tdl(id,ext){
+    var url=id+"."+ext;
+    fetch(url,{method:"HEAD"}).then(function(r){
+      if(r.ok){ var a=document.createElement("a"); a.href=url; a.setAttribute("download",""); document.body.appendChild(a); a.click(); a.remove(); }
+      else { (window.showToast||window.alert)("The "+ext.toUpperCase()+" master for this template hasn\u2019t been uploaded yet \u2014 a manager can add it."); }
+    }).catch(function(){ (window.showToast||window.alert)("Couldn\u2019t reach that file \u2014 check your connection."); });
   }
 </script>
 <script>
