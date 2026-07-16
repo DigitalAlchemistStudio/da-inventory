@@ -169,6 +169,11 @@
   .tmpl-sec[open]>summary.tmpl-cat::after{transform:rotate(180deg);}
   .tmpl-sec>summary.tmpl-cat:hover{background:var(--panel);color:var(--cyan);}
   .tmpl-sec .tmpl-grid{padding:2px 14px 16px;}
+  #shipCard>summary{list-style:none;}
+  #shipCard>summary::-webkit-details-marker{display:none;}
+  #shipCard table input{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 6px;font-size:13px;}
+  #shipCard select,#shipCard input#calcOz,#shipCard input#shipZone{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 8px;font-size:13px;}
+  #shipCard .shipnote{color:var(--muted);font-size:11px;margin-top:8px;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -464,6 +469,24 @@
       </table>
     </div>
   </div>
+  <details class="card mgr-only" id="shipCard" style="border-color:var(--accent);">
+    <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+      <span>📦 Shipping rates &amp; verification <span style="font-size:12px;color:var(--muted);font-weight:400;">— Pirate Ship (manager-only)</span></span><span style="font-size:12px;color:var(--muted);">▾</span>
+    </summary>
+    <p class="sub" style="margin:10px 0;">The estimate always picks the <b>cheapest service</b> for a given weight. These are <b>starter rates</b> — replace any cell with your exact Pirate Ship numbers and the whole app verifies against what you actually pay. Rates save on this device.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
+      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Weight (oz)</label><input type="number" id="calcOz" min="0" step="0.1" value="4" style="width:90px" oninput="calcShip()"></div>
+      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Destination</label><select id="calcDest" onchange="calcShip()" style="width:170px"><option value="dom">US (domestic)</option><option value="Canada">Canada</option><option value="Rest of World">International</option></select></div>
+      <div id="calcOut" style="font-size:14px;padding-bottom:7px;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px;">Domestic rates &nbsp; <span style="text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400;">representative zone <input type="number" id="shipZone" min="1" max="9" value="4" style="width:46px" oninput="updZone(this.value)"> (US average)</span></div>
+    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Weight up to</th><th>USPS Ground Advantage</th><th>USPS Priority</th><th>UPS Ground</th></tr></thead><tbody id="shipRows"></tbody></table></div>
+    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:18px 0 6px;">International (flat, by region)</div>
+    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Region</th><th>up to 1 lb</th><th>up to 2 lb</th><th>up to 4 lb</th></tr></thead><tbody id="shipIntlRows"></tbody></table></div>
+    <div style="margin-top:12px;"><button class="btn ghost sm" onclick="resetShipTable()">Reset to starter rates</button></div>
+    <div class="shipnote">Starter values approximate 2026 commercial rates (a US-average zone). Note the July 2026 USPS change: Ground Advantage under 1&nbsp;lb is now one flat rate per zone. Rates are stored per device — ask to sync across the team via Supabase if you want that.</div>
+  </details>
+
   </div><!-- /tab-manager -->
 
   <div id="tab-templates" class="tabpanel">
@@ -764,7 +787,40 @@ let sortKey = 'artist', sortDir = 1;
 function load(){ return items; }      // data now lives in the shared cloud catalog
 function save(){ if(window.daPersist) daPersist(); }  // pushes changes to Supabase
 function shipCfg(){ var b=document.getElementById('shipBase'), r=document.getElementById('shipRate'); return {base:parseFloat(b&&b.value)||0, rate:parseFloat(r&&r.value)||0}; }
-function shipEst(it){ var c=shipCfg(); return c.base + c.rate*(parseFloat(it.weight)||0); }
+var DA_SHIP_DEFAULT={zone:4,dom:[
+ {label:"1 lb (≤16 oz)",maxOz:16,ga:4.50,pri:8.50,ups:10.75},
+ {label:"2 lb (≤32 oz)",maxOz:32,ga:6.00,pri:9.50,ups:11.75},
+ {label:"3 lb (≤48 oz)",maxOz:48,ga:7.25,pri:11.00,ups:12.75},
+ {label:"5 lb (≤80 oz)",maxOz:80,ga:9.50,pri:13.75,ups:14.50},
+ {label:"10 lb (≤160 oz)",maxOz:160,ga:14.00,pri:18.50,ups:19.00}
+],intl:[
+ {region:"Canada",w16:14.00,w32:21.00,w64:32.00},
+ {region:"Rest of World",w16:18.00,w32:29.00,w64:47.00}
+]};
+function shipTable(){ try{ var t=JSON.parse(localStorage.getItem('da_ship_table')); return (t&&t.dom&&t.dom.length)?t:JSON.parse(JSON.stringify(DA_SHIP_DEFAULT)); }catch(e){ return JSON.parse(JSON.stringify(DA_SHIP_DEFAULT)); } }
+function saveShipTable(t){ try{ localStorage.setItem('da_ship_table',JSON.stringify(t)); }catch(e){} }
+function shipQuote(oz,dest){ var t=shipTable(); oz=parseFloat(oz)||0;
+  if(dest&&dest!=='dom'){ var col=oz<=16?'w16':(oz<=32?'w32':'w64'); var r=(t.intl||[]).filter(function(x){return x.region===dest;})[0]; if(r){ var p=parseFloat(r[col]); if(p>0) return {price:p,svc:dest+' '+(col==='w16'?'≤1 lb':col==='w32'?'≤2 lb':'≤4 lb')}; } return null; }
+  var row=null; for(var i=0;i<t.dom.length;i++){ if(oz<=t.dom[i].maxOz){ row=t.dom[i]; break; } } if(!row) row=t.dom[t.dom.length-1];
+  var opts=[['USPS Ground Advantage',row.ga],['USPS Priority',row.pri],['UPS Ground',row.ups]].filter(function(o){ return parseFloat(o[1])>0; });
+  if(!opts.length) return null; opts.sort(function(a,b){ return a[1]-b[1]; }); return {price:parseFloat(opts[0][1]),svc:opts[0][0]}; }
+function shipEst(it){ var q=shipQuote(parseFloat(it.weight)||0,'dom'); if(q) return q.price; var c=shipCfg(); return c.base + c.rate*(parseFloat(it.weight)||0); }
+function renderShipTable(){ var t=shipTable(); var tb=document.getElementById('shipRows'); if(!tb) return;
+  var z=document.getElementById('shipZone'); if(z&&t.zone!=null) z.value=t.zone;
+  function n(v){ return v!=null?v:''; }
+  tb.innerHTML=t.dom.map(function(r,i){ function c(k){ return '<td><input type="number" step="0.05" min="0" value="'+n(r[k])+'" oninput="updShip('+i+',\''+k+'\',this.value)" style="width:80px"></td>'; }
+    return '<tr><td style="text-align:left;">'+r.label+'</td>'+c('ga')+c('pri')+c('ups')+'</tr>'; }).join('');
+  var ib=document.getElementById('shipIntlRows'); if(ib){ ib.innerHTML=(t.intl||[]).map(function(r,i){ function c(k){ return '<td><input type="number" step="0.05" min="0" value="'+n(r[k])+'" oninput="updIntl('+i+',\''+k+'\',this.value)" style="width:80px"></td>'; }
+    return '<tr><td style="text-align:left;">'+r.region+'</td>'+c('w16')+c('w32')+c('w64')+'</tr>'; }).join(''); }
+  calcShip(); }
+function updShip(i,k,v){ var t=shipTable(); t.dom[i][k]=parseFloat(v)||0; saveShipTable(t); calcShip(); if(typeof render==='function') render(); }
+function updIntl(i,k,v){ var t=shipTable(); if(!t.intl[i]) return; t.intl[i][k]=parseFloat(v)||0; saveShipTable(t); calcShip(); }
+function updZone(v){ var t=shipTable(); t.zone=parseInt(v)||4; saveShipTable(t); }
+function resetShipTable(){ saveShipTable(JSON.parse(JSON.stringify(DA_SHIP_DEFAULT))); renderShipTable(); if(typeof render==='function') render(); (window.showToast||window.alert)('Shipping rates reset to starter values.'); }
+function calcShip(){ var o=document.getElementById('calcOut'); if(!o) return; var oz=document.getElementById('calcOz').value; var dest=document.getElementById('calcDest').value; var q=shipQuote(oz,dest);
+  if(q){ o.innerHTML='Cheapest: <b style="color:var(--good)">$'+q.price.toFixed(2)+'</b> &nbsp;<span style="color:var(--muted)">via '+q.svc+'</span>'; }
+  else { o.innerHTML='<span style="color:var(--muted)">No rate set for that weight / region.</span>'; } }
+(function(){ try{ renderShipTable(); }catch(e){} })();
 function artistOf(it){ var code=(it.sku||'').split('-')[0]; var M={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',COL:'Colab',DA:'Digital Alchemists'}; return M[code]||code||''; }
 function setSort(k){ sortKey=k; var b=document.getElementById('sortDirBtn'); if(b)b.textContent=sortDir>0?'\u25B2':'\u25BC'; render(); }
 function toggleSortDir(){ sortDir*=-1; var b=document.getElementById('sortDirBtn'); if(b)b.textContent=sortDir>0?'\u25B2':'\u25BC'; render(); }
