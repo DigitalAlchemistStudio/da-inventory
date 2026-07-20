@@ -280,8 +280,7 @@
 <div id="authGate" class="mode-login" style="display:none;">
   <div class="authCard">
     <img id="authLogo" class="authLogo" alt="Digital Alchemists">
-    <h2>Digital Alchemists</h2>
-    <div class="sub" id="auSub">Inventory &amp; SKU Manager — sign in to the shared catalog.</div>
+    <div class="sub" id="auSub">Digital Alchemists Product Management</div>
     <div class="applyOnly">
       <label>Your name *</label>
       <input id="auName" placeholder="Your name or studio">
@@ -1456,7 +1455,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
     gate.className = 'mode-'+mode;
     var apply = mode==='apply';
     document.getElementById('auBtn').textContent = apply?'Submit application':'Sign in';
-    var sub=document.getElementById('auSub'); if(sub){ sub.textContent = apply?'Apply to join the Digital Alchemists artist roster — we review every application.':'Inventory & SKU Manager — sign in to the shared catalog.'; }
+    var sub=document.getElementById('auSub'); if(sub){ sub.textContent = apply?'Apply to join the Digital Alchemists artist roster — we review every application.':'Digital Alchemists Product Management'; }
     document.getElementById('auErr').textContent='';
   };
   window.daAuthSubmit = function(){
