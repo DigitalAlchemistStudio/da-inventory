@@ -1990,8 +1990,8 @@ function daRenderRequests(){
       +'</div>'
       +'</div>';
     var actions='<div class="req-actions">'
-      +'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>'
-      +'<button class="req-btn" onclick="daShowDeny(\''+q.id+'\')">Deny</button>'
+      +(st==='pending'?'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>':'')
+      +(st==='pending'?'<button class="req-btn" onclick="daShowDeny(\''+q.id+'\')">Deny</button>':'')
       +'<button class="req-btn" onclick="daEmailReq(\''+q.id+'\')">Email</button>'
       +'</div>';
     return '<div class="req-card">'+body+actions+'<div class="req-status '+st+'">'+st+'</div></div>';
