@@ -250,6 +250,20 @@
   .req-status.approved{background:var(--good);color:#052117;}
   .req-status.denied{background:var(--bad);color:#2a0606;}
   @media(max-width:680px){ .req-card{flex-wrap:wrap;} .req-actions{width:100%;justify-content:flex-start;padding:0 16px 12px;} .req-status{width:100%;min-height:44px;} }
+  .req-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .req-filter{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:20px;cursor:pointer;}
+  .req-filter:hover{color:var(--text);border-color:var(--accent2);}
+  .req-filter.on{background:var(--accent2);color:#04121f;border-color:var(--accent2);}
+  .req-meta{font-size:11.5px;color:var(--muted);margin:2px 0 4px;}
+  .req-reason{font-size:12.5px;margin-top:6px;color:var(--bad);}
+  .req-reason b{color:var(--bad);}
+  .req-deny{margin-top:10px;flex-direction:column;gap:6px;max-width:440px;}
+  .req-deny select,.req-deny textarea{width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:12.5px;font-family:inherit;}
+  .req-deny textarea{min-height:52px;resize:vertical;}
+  .req-deny-act{display:flex;gap:8px;}
+  .req-btn.sm{font-size:12.5px;padding:6px 13px;border-radius:8px;}
+  .req-btn.ghost{border-color:var(--border);color:var(--muted);}
+  .req-btn.ghost:hover{background:var(--panel);color:var(--text);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1940,36 +1954,64 @@ window.daLoadRequests=function(){
     window.daRequests=r.data||[]; daRenderRequests();
   });
 };
+window.daReqFilter='all';
+window.daSetReqFilter=function(fx){ window.daReqFilter=fx; daRenderRequests(); };
 function daRenderRequests(){
   var list=document.getElementById('reqList'); if(!list) return;
   var reqs=window.daRequests||[];
-  var pend=reqs.filter(function(x){ return (x.status||'pending')==='pending'; }).length;
+  var counts={all:reqs.length, pending:0, approved:0, denied:0};
+  reqs.forEach(function(x){ var s=x.status||'pending'; if(counts[s]!=null) counts[s]++; });
+  var pend=counts.pending;
   var cnt=document.getElementById('reqCount'); if(cnt){ cnt.textContent=pend?(pend+' pending'):'none pending'; cnt.className='pill '+(pend?'warn':'good'); }
   var tabc=document.getElementById('reqTabCount'); if(tabc){ if(pend){ tabc.textContent=pend; tabc.style.display=''; } else { tabc.style.display='none'; } }
   if(!reqs.length){ list.innerHTML='<p class="sub" style="margin:8px 0;">No applications yet.</p>'; return; }
+  var filter=window.daReqFilter||'all';
+  function fbtn(key,label){ var n=(key==='all'?counts.all:counts[key]); return '<button class="req-filter'+(filter===key?' on':'')+'" onclick="daSetReqFilter(\''+key+'\')">'+label+' ('+n+')</button>'; }
+  var bar='<div class="req-filters">'+fbtn('all','All')+fbtn('pending','Pending')+fbtn('approved','Approved')+fbtn('denied','Denied')+'</div>';
+  var shown=filter==='all'?reqs:reqs.filter(function(x){ return (x.status||'pending')===filter; });
   function line(l,v){ return v?('<div style="font-size:12.5px;margin:2px 0;"><span style="color:var(--muted)">'+l+':</span> '+esc(v)+'</div>'):''; }
-  list.innerHTML=reqs.map(function(q){
+  function dstr(t){ return t?new Date(t).toLocaleDateString():''; }
+  var reasons=['Portfolio doesn’t fit our style','Need to see more / stronger work','Not onboarding new artists right now','Incomplete application','Duplicate or spam','Other'];
+  var cards=shown.map(function(q){
     var st=q.status||'pending';
-    var when=q.created_at?new Date(q.created_at).toLocaleDateString():'';
-    return '<div class="req-card">'
-      +'<div class="req-body">'
+    var applied=dstr(q.created_at), reviewed=dstr(q.reviewed_at);
+    var meta='Applied: '+esc(applied)+(st==='denied'&&reviewed?(' &middot; <span style="color:var(--bad)">Denied: '+esc(reviewed)+'</span>'):'')+(st==='approved'&&reviewed?(' &middot; <span style="color:var(--good)">Approved: '+esc(reviewed)+'</span>'):'');
+    var body='<div class="req-body">'
       +'<b class="req-name">'+esc(q.name||'?')+'</b>'
-      +'<div class="req-email">'+esc(q.email||'')+(when?(' &middot; <span style="color:var(--muted)">'+when+'</span>'):'')+'</div>'
+      +'<div class="req-email">'+esc(q.email||'')+'</div>'
+      +'<div class="req-meta">'+meta+'</div>'
       +line('Portfolio',q.portfolio)+line('Brand',q.brand)+line('Makes',q.mediums)+line('Why',q.why)
+      +(st==='denied'&&q.review_note?('<div class="req-reason"><b>Denial reason:</b> '+esc(q.review_note)+'</div>'):'')
+      +'<div class="req-deny" id="deny-'+q.id+'" style="display:none;">'
+        +'<label style="font-size:11.5px;color:var(--muted);">Reason for denial</label>'
+        +'<select id="dr-'+q.id+'">'+reasons.map(function(r){ return '<option>'+esc(r)+'</option>'; }).join('')+'</select>'
+        +'<textarea id="dn-'+q.id+'" placeholder="Optional note (saved with the application)"></textarea>'
+        +'<div class="req-deny-act"><button class="req-btn sm" onclick="daConfirmDeny(\''+q.id+'\')">Confirm deny</button><button class="req-btn sm ghost" onclick="daCancelDeny(\''+q.id+'\')">Cancel</button></div>'
       +'</div>'
-      +'<div class="req-actions">'
-      +'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>'
-      +'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'denied\')">Deny</button>'
-      +'<button class="req-btn" onclick="daEmailReq(\''+q.id+'\')">Email</button>'
-      +'</div>'
-      +'<div class="req-status '+st+'">'+st+'</div>'
       +'</div>';
+    var actions='<div class="req-actions">'
+      +'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>'
+      +'<button class="req-btn" onclick="daShowDeny(\''+q.id+'\')">Deny</button>'
+      +'<button class="req-btn" onclick="daEmailReq(\''+q.id+'\')">Email</button>'
+      +'</div>';
+    return '<div class="req-card">'+body+actions+'<div class="req-status '+st+'">'+st+'</div></div>';
   }).join('');
+  list.innerHTML=bar+(shown.length?cards:'<p class="sub" style="margin:8px 0;">No '+esc(filter)+' applications.</p>');
 }
-window.daSetRequest=function(id,status){
-  window.daSB.from('access_requests').update({ status:status, reviewed_at:new Date().toISOString(), reviewed_by:(window.daProfile&&window.daProfile.id)||null }).eq('id',id).then(function(r){
+window.daShowDeny=function(id){ var e=document.getElementById('deny-'+id); if(e) e.style.display='flex'; };
+window.daCancelDeny=function(id){ var e=document.getElementById('deny-'+id); if(e) e.style.display='none'; };
+window.daConfirmDeny=function(id){
+  var rsel=document.getElementById('dr-'+id), note=document.getElementById('dn-'+id);
+  var reason=(rsel?rsel.value:'Denied')+(note&&note.value.trim()?(' — '+note.value.trim()):'');
+  daSetRequest(id,'denied',reason);
+};
+window.daSetRequest=function(id,status,note){
+  var now=new Date().toISOString();
+  var payload={ status:status, reviewed_at:now, reviewed_by:(window.daProfile&&window.daProfile.id)||null };
+  if(note!=null){ payload.review_note=note; }
+  window.daSB.from('access_requests').update(payload).eq('id',id).then(function(r){
     if(r.error){ (window.showToast||window.alert)('Update failed: '+(r.error.message||r.error)); return; }
-    (window.daRequests||[]).forEach(function(x){ if(x.id===id){ x.status=status; } });
+    (window.daRequests||[]).forEach(function(x){ if(x.id===id){ x.status=status; x.reviewed_at=now; if(note!=null) x.review_note=note; } });
     daRenderRequests();
     if(status==='approved'){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; (window.showToast||window.alert)('Approved '+((q&&q.name)||'')+'. Now invite '+((q&&q.email)||'them')+' in Supabase → Authentication → Users → Invite.'); }
   });
