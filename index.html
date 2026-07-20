@@ -266,6 +266,10 @@
   .req-btn.ghost:hover{background:var(--panel);color:var(--text);}
   .req-btn.invite{background:var(--good);border-color:var(--good);color:#052117;}
   .req-btn.invite:hover{background:var(--good);color:#052117;filter:brightness(1.1);}
+  #authGate .links-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  #authGate .links-grid .lnk{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);margin:0;text-transform:none;letter-spacing:0;}
+  #authGate .links-grid .lnk input{margin:0;padding:8px 10px;font-size:13px;}
+  @media(max-width:520px){ #authGate .links-grid{grid-template-columns:1fr;} }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -285,7 +289,16 @@
       <label>Your name *</label>
       <input id="auName" placeholder="Your name or studio">
       <label>Portfolio / social links</label>
-      <input id="auPortfolio" placeholder="Instagram, ArtStation, website…">
+      <div class="links-grid">
+        <label class="lnk">ArtStation<input id="lnk_artstation" placeholder="link or @handle"></label>
+        <label class="lnk">Instagram<input id="lnk_instagram" placeholder="link or @handle"></label>
+        <label class="lnk">X (Twitter)<input id="lnk_x" placeholder="link or @handle"></label>
+        <label class="lnk">Bluesky<input id="lnk_bluesky" placeholder="link or @handle"></label>
+        <label class="lnk">TikTok<input id="lnk_tiktok" placeholder="link or @handle"></label>
+        <label class="lnk">DeviantArt<input id="lnk_deviantart" placeholder="link or @handle"></label>
+        <label class="lnk">Personal website<input id="lnk_website" placeholder="https://…"></label>
+        <label class="lnk">Other<input id="lnk_other" placeholder="link"></label>
+      </div>
       <label>Shop or brand name</label>
       <input id="auBrand" placeholder="If you have one">
       <label>What you make / mediums</label>
@@ -1930,7 +1943,9 @@ window.daApplySubmit=function(btn,err){
   var name=g('auName'), email=g('auEmail');
   if(!name||!email){ err.textContent='Please enter your name and email.'; btn.disabled=false; return; }
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent='Please enter a valid email.'; btn.disabled=false; return; }
-  var rec={ name:name, email:email, portfolio:g('auPortfolio')||null, brand:g('auBrand')||null, mediums:g('auMediums')||null, why:g('auWhy')||null, status:'pending' };
+  var links=[['ArtStation','lnk_artstation'],['Instagram','lnk_instagram'],['X (Twitter)','lnk_x'],['Bluesky','lnk_bluesky'],['TikTok','lnk_tiktok'],['DeviantArt','lnk_deviantart'],['Website','lnk_website'],['Other','lnk_other']];
+  var portfolio=links.map(function(p){ var v=g(p[1]); return v?(p[0]+': '+v):''; }).filter(Boolean).join('  |  ');
+  var rec={ name:name, email:email, portfolio:portfolio||null, brand:g('auBrand')||null, mediums:g('auMediums')||null, why:g('auWhy')||null, status:'pending' };
   btn.disabled=true; err.textContent='';
   window.daSB.from('access_requests').insert(rec).then(function(r){
     if(r.error){ err.textContent='Could not submit: '+(r.error.message||r.error); btn.disabled=false; return; }
