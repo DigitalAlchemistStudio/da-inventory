@@ -1041,28 +1041,73 @@ sizeCustomEl.addEventListener('input',refreshSKU);
 
 document.getElementById('prodForm').addEventListener('submit',e=>{
   e.preventDefault();
-  const id = document.getElementById('editId').value || uid();
+  const editId = document.getElementById('editId').value;
+  const id = editId || uid();
   const size = curSize();
-  const rec = {
-    id,
-    title: titleEl.value.trim(),
-    size,
-    sku: (skuEl.value.trim() || genSKU(titleEl.value,size)),
-    vendor: getVendors(),
-    cost: parseFloat(document.getElementById('cost').value)||0,
-    price: parseFloat(document.getElementById('price').value)||0,
-    qty: parseInt(document.getElementById('qty').value)||0,
-    reorder: parseInt(document.getElementById('reorder').value)||0,
-    lastOrder: document.getElementById('lastOrder').value||'',
-    notes: document.getElementById('notes').value.trim(),
-    weight: parseFloat(document.getElementById('weight').value)||0,
-    thumb: document.getElementById('imgThumb').value||'',
-    hasImg: document.getElementById('imgHas').value==='1',
-    imgUrl: (document.getElementById('imgUrl')||{}).value||''
-  };
+  const gA=document.getElementById('gArtist'), gP=document.getElementById('gProduct'), gD=document.getElementById('gDesign'), gF=document.getElementById('gFinish');
+  function editableRec(){
+    return {
+      title: titleEl.value.trim(),
+      vendor: getVendors(),
+      cost: parseFloat(document.getElementById('cost').value)||0,
+      price: parseFloat(document.getElementById('price').value)||0,
+      qty: parseInt(document.getElementById('qty').value)||0,
+      reorder: parseInt(document.getElementById('reorder').value)||0,
+      lastOrder: document.getElementById('lastOrder').value||'',
+      notes: document.getElementById('notes').value.trim(),
+      weight: parseFloat(document.getElementById('weight').value)||0,
+      thumb: document.getElementById('imgThumb').value||'',
+      hasImg: document.getElementById('imgHas').value==='1',
+      imgUrl: (document.getElementById('imgUrl')||{}).value||''
+    };
+  }
+  function builderMeta(){
+    return {
+      artistCode: (gA&&gA.value)||'',
+      category: ((gP&&gP.value)||'').split('|')[0]||'',
+      sub: ((gP&&gP.value)||'').split('|')[1]||'',
+      designCode: (gD&&gD.value)||'',
+      finish: (gF&&gF.value)||''
+    };
+  }
+  /* ---- All sizes: create one product per size for this design ---- */
+  if(size==='__all'){
+    const sizeSelEl=document.getElementById('size');
+    const opts=[...sizeSelEl.options].filter(o=>o.value && o.value!=='__all' && o.value!=='__custom' && o.textContent.indexOf('no size')<0);
+    let made=0;
+    opts.forEach(o=>{
+      sizeSelEl.value=o.value; window.skuTouched=false;
+      if(window.daBuilderUpdate) window.daBuilderUpdate();
+      const rec=Object.assign({}, editableRec(), builderMeta(), {
+        id: uid(), size: o.textContent,
+        sku: (document.getElementById('sku').value.trim()) || genSKU(titleEl.value,o.value),
+        cost: parseFloat(document.getElementById('cost').value)||0,
+        price: parseFloat(document.getElementById('price').value)||0,
+        weight: parseFloat(document.getElementById('weight').value)||0
+      });
+      items.push(rec); made++;
+    });
+    save(); resetForm(); render(); if(window.daRenderArtists) window.daRenderArtists();
+    (window.showToast||window.alert)('Added '+made+' size variants'+(made?' for "'+(titleEl.value.trim()||'this design')+'".':'.'));
+    return;
+  }
+  /* ---- single product (add or edit) ---- */
+  const existing = items.find(it=>it.id===id) || {};
+  const isEdit = !!editId && items.findIndex(it=>it.id===id)>=0;
+  let sku = (skuEl.value.trim() || genSKU(titleEl.value,size));
+  const artNew = (gA&&gA.value) || existing.artistCode || ((existing.sku||'').split('-')[0]) || '';
+  if(artNew){
+    let known=[]; try{ if(typeof BUILDER!=='undefined'&&BUILDER.artists) known=BUILDER.artists.map(a=>a[1]); }catch(_){}
+    (window.daProfilesAll||[]).forEach(p=>{ if(p.artist_code) known.push(p.artist_code); });
+    const parts=sku.split('-');
+    if(parts.length>1 && known.indexOf(parts[0])>=0 && parts[0]!==artNew){ parts[0]=artNew; sku=parts.join('-'); }
+  }
+  let rec;
+  if(isEdit){ rec = Object.assign({}, existing, editableRec(), { id, size, sku, artistCode: artNew||existing.artistCode||'' }); }
+  else { rec = Object.assign({}, editableRec(), builderMeta(), { id, size, sku, artistCode: artNew }); }
   const idx = items.findIndex(it=>it.id===id);
   if(idx>=0) items[idx]=rec; else items.push(rec);
-  save(); resetForm(); render();
+  save(); resetForm(); render(); if(window.daRenderArtists) window.daRenderArtists();
 });
 
 function resetForm(){
@@ -1082,6 +1127,7 @@ function editItem(id){
   if(known){ sizeEl.value=it.size; sizeCustomEl.style.display='none'; }
   else{ sizeEl.value='__custom'; sizeCustomEl.style.display='block'; sizeCustomEl.value=it.size; }
   skuTouched=true; skuEl.value=it.sku;
+  var _gA=document.getElementById('gArtist'); if(_gA){ _gA.value = it.artistCode || ((it.sku||'').split('-')[0]) || ''; }
   setVendors(it.vendor);
   document.getElementById('cost').value=it.cost||'';
   document.getElementById('price').value=it.price||'';
@@ -1316,6 +1362,8 @@ function setVendors(str){ var parts=(str||'').split('+').map(function(s){return 
   function fillSizes(sub){
     sizeSel.innerHTML=''; opt(sizeSel,'','One Size / N/A');
     const list=(sub&&SIZEBYSUB[sub]&&SIZEBYSUB[sub].length)?SIZEBYSUB[sub]:BUILDER.sizes;
+    var realCount=(sub&&SIZEBYSUB[sub])?SIZEBYSUB[sub].filter(function(x){return x[1] && x[1].indexOf('no size')<0;}).length:0;
+    if(realCount>1){ opt(sizeSel,'__all','➕ All sizes — one SKU each'); }
     list.forEach(s=>{ if(s[1]!=='') opt(sizeSel,s[1],s[0]); });
     opt(sizeSel,'__custom','Custom...');
   }
@@ -1331,7 +1379,7 @@ function setVendors(str){ var parts=(str||'').split('+').map(function(s){return 
   function lookupPrice(sub,size){ if(BUILDER.price[sub+'|'+size]!=null)return BUILDER.price[sub+'|'+size]; if(BUILDER.price[sub+'|*']!=null)return BUILDER.price[sub+'|*']; return ''; }
   function buildSKUString(){
     const art=gArtist.value, pv=(gProduct.value||''), dsg=gDesign.value, fin=gFinish.value;
-    const cat=pv.split('|')[0]||'', sub=pv.split('|')[1]||''; const size=curSizeCode();
+    const cat=pv.split('|')[0]||'', sub=pv.split('|')[1]||''; let size=curSizeCode(); if(size==='__all') size='';
     if(!(art&&cat&&sub&&dsg&&gNum.value)) return '';
     const num=String(parseInt(gNum.value)||1).padStart(2,'0');
     let sku=[art,cat,sub,dsg,num].join('-');
