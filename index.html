@@ -283,6 +283,10 @@
   .a-stats span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
   .a-cut{font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
   .a-cut input{width:70px;padding:6px 8px;border-radius:7px;border:1px solid var(--border);background:var(--panel);color:var(--text);}
+  #editDrawer>summary.editDrawer-sum{list-style:none;cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;gap:8px;margin:0;}
+  #editDrawer>summary.editDrawer-sum::-webkit-details-marker{display:none;}
+  #editDrawer>summary.editDrawer-sum::after{content:"▾";margin-left:auto;color:var(--muted);font-size:13px;}
+  #editDrawer[open] form,#editDrawer[open] .hint{margin-top:14px;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -357,38 +361,14 @@
     <button class="tabbtn" data-tab="templates" onclick="switchTab('templates')">Templates / Resources</button>
     <button class="tabbtn mgr-only" data-tab="applications" onclick="switchTab('applications')">Applications <span id="reqTabCount" class="pill warn" style="font-size:10px;padding:1px 6px;display:none;">0</span></button>
     <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button>
+    <button class="tabbtn mgr-only" data-tab="utilities" onclick="switchTab('utilities')">Utilities</button>
   </div>
   <div id="tab-manager" class="tabpanel active">
   <div class="stats" id="stats"></div>
 
-  <div class="card mgr-only" style="border-color:var(--accent);">
-    <h2 style="display:flex;align-items:center;gap:8px;">🔄 Shopify Sync <span class="pill good" style="font-weight:600;">Shopify = source of truth</span></h2>
-    <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:14px;">
-      This desktop tool is where you <b>build products and generate SKUs</b>. Your live stock, orders and prices live in <b>Shopify</b>. Sync runs securely through Claude — nothing here stores a Shopify password or API key.
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
-      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
-        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">⬆️ Push to Shopify</div>
-        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Click <b>Push → Shopify CSV</b> above to export a Shopify-ready file. Then either upload it in <b>Shopify Admin → Products → Import</b>, or just tell Claude <i>“push my inventory CSV to Shopify.”</i></div>
-      </div>
-      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
-        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">⬇️ Pull from Shopify</div>
-        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Ask Claude <i>“pull my live Shopify inventory”</i> and import the CSV it gives you via <b>Import CSV</b>. Rows are matched by <b>SKU</b> — quantities and prices update in place, no duplicates.</div>
-      </div>
-      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
-        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">📱 On iOS</div>
-        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Install the free <b>Shopify</b> app from the App Store and sign in. Because Shopify holds the master data, edits you make on your phone and here both reconcile against the same store.</div>
-      </div>
-    </div>
-  </div>
+  
 
-  <div class="card mgr-only" style="border-color:var(--warn);">
-    <h2 style="display:flex;align-items:center;gap:8px;">💸 Artist payouts</h2>
-    <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px;">
-      Each artist earns their share of the profit (sale price − manufacture cost). Default 40% to the artist, 60% to Digital Alchemists. Change a rate and it applies to that artist's earnings everywhere.
-    </div>
-    <div id="artistRates" class="grid"></div>
-  </div>
+  
 
   <div class="card" style="border-color:var(--accent2);">
     <h2 style="display:flex;align-items:center;gap:8px;">🎨 Design → Products <span class="pill" style="background:var(--accent2);color:#04121f;font-weight:600;">batch</span></h2>
@@ -447,8 +427,8 @@
     </div>
   </div>
 
-  <div class="card mgr-only">
-    <h2 id="formTitle">Add a product</h2>
+  <details class="card mgr-only" id="editDrawer">
+    <summary id="formTitle" class="editDrawer-sum">Add a product</summary>
     <form id="prodForm" autocomplete="off">
       <input type="hidden" id="editId">
       <div class="field"><label>Artist / Collab</label><select id="gArtist"></select></div>
@@ -554,7 +534,7 @@
       </div>
     </form>
     <div class="hint" style="margin-top:10px;">SKU auto-builds from title + size (editable). Margin, inventory value, and low-stock flags calculate automatically.</div>
-  </div>
+  </details>
 
   <div class="card">
     <h2 id="listTitle">Master list</h2>
@@ -589,23 +569,7 @@
       </table>
     </div>
   </div>
-  <details class="card mgr-only" id="shipCard" style="border-color:var(--accent);">
-    <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
-      <span>📦 Shipping rates &amp; verification <span style="font-size:12px;color:var(--muted);font-weight:400;">— Pirate Ship (manager-only)</span></span><span style="font-size:12px;color:var(--muted);">▾</span>
-    </summary>
-    <p class="sub" style="margin:10px 0;">The estimate always picks the <b>cheapest service</b> for a given weight. These are <b>starter rates</b> — replace any cell with your exact Pirate Ship numbers and the whole app verifies against what you actually pay. Rates save on this device.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
-      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Weight (oz)</label><input type="number" id="calcOz" min="0" step="0.1" value="4" style="width:90px" oninput="calcShip()"></div>
-      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Destination</label><select id="calcDest" onchange="calcShip()" style="width:170px"><option value="dom">US (domestic)</option><option value="Canada">Canada</option><option value="Rest of World">International</option></select></div>
-      <div id="calcOut" style="font-size:14px;padding-bottom:7px;"></div>
-    </div>
-    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px;">Domestic rates &nbsp; <span style="text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400;">representative zone <input type="number" id="shipZone" min="1" max="9" value="4" style="width:46px" oninput="updZone(this.value)"> (US average)</span></div>
-    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Weight up to</th><th>USPS Ground Advantage</th><th>USPS Priority</th><th>UPS Ground</th></tr></thead><tbody id="shipRows"></tbody></table></div>
-    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:18px 0 6px;">International (flat, by region)</div>
-    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Region</th><th>up to 1 lb</th><th>up to 2 lb</th><th>up to 4 lb</th></tr></thead><tbody id="shipIntlRows"></tbody></table></div>
-    <div style="margin-top:12px;"><button class="btn ghost sm" onclick="resetShipTable()">Reset to starter rates</button></div>
-    <div class="shipnote">Starter values approximate 2026 commercial rates (a US-average zone). Note the July 2026 USPS change: Ground Advantage under 1&nbsp;lb is now one flat rate per zone. Rates are stored per device — ask to sync across the team via Supabase if you want that.</div>
-  </details>
+  
 
   </div><!-- /tab-manager -->
 
@@ -961,6 +925,52 @@
       <div id="artistsList"></div>
     </div>
   </div>
+  <div id="tab-utilities" class="tabpanel">
+  <div class="card mgr-only" style="border-color:var(--accent);">
+    <h2 style="display:flex;align-items:center;gap:8px;">🔄 Shopify Sync <span class="pill good" style="font-weight:600;">Shopify = source of truth</span></h2>
+    <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:14px;">
+      This desktop tool is where you <b>build products and generate SKUs</b>. Your live stock, orders and prices live in <b>Shopify</b>. Sync runs securely through Claude — nothing here stores a Shopify password or API key.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">⬆️ Push to Shopify</div>
+        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Click <b>Push → Shopify CSV</b> above to export a Shopify-ready file. Then either upload it in <b>Shopify Admin → Products → Import</b>, or just tell Claude <i>“push my inventory CSV to Shopify.”</i></div>
+      </div>
+      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">⬇️ Pull from Shopify</div>
+        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Ask Claude <i>“pull my live Shopify inventory”</i> and import the CSV it gives you via <b>Import CSV</b>. Rows are matched by <b>SKU</b> — quantities and prices update in place, no duplicates.</div>
+      </div>
+      <div style="background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;">
+        <div style="color:var(--accent2);font-weight:600;margin-bottom:6px;">📱 On iOS</div>
+        <div style="color:var(--muted);font-size:12.5px;line-height:1.55;">Install the free <b>Shopify</b> app from the App Store and sign in. Because Shopify holds the master data, edits you make on your phone and here both reconcile against the same store.</div>
+      </div>
+    </div>
+  </div>
+  <details class="card mgr-only" id="shipCard" style="border-color:var(--accent);">
+    <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+      <span>📦 Shipping rates &amp; verification <span style="font-size:12px;color:var(--muted);font-weight:400;">— Pirate Ship (manager-only)</span></span><span style="font-size:12px;color:var(--muted);">▾</span>
+    </summary>
+    <p class="sub" style="margin:10px 0;">The estimate always picks the <b>cheapest service</b> for a given weight. These are <b>starter rates</b> — replace any cell with your exact Pirate Ship numbers and the whole app verifies against what you actually pay. Rates save on this device.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:18px;">
+      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Weight (oz)</label><input type="number" id="calcOz" min="0" step="0.1" value="4" style="width:90px" oninput="calcShip()"></div>
+      <div><label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px;">Destination</label><select id="calcDest" onchange="calcShip()" style="width:170px"><option value="dom">US (domestic)</option><option value="Canada">Canada</option><option value="Rest of World">International</option></select></div>
+      <div id="calcOut" style="font-size:14px;padding-bottom:7px;"></div>
+    </div>
+    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px;">Domestic rates &nbsp; <span style="text-transform:none;letter-spacing:0;color:var(--muted);font-weight:400;">representative zone <input type="number" id="shipZone" min="1" max="9" value="4" style="width:46px" oninput="updZone(this.value)"> (US average)</span></div>
+    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Weight up to</th><th>USPS Ground Advantage</th><th>USPS Priority</th><th>UPS Ground</th></tr></thead><tbody id="shipRows"></tbody></table></div>
+    <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin:18px 0 6px;">International (flat, by region)</div>
+    <div class="tablewrap"><table><thead><tr><th style="text-align:left;">Region</th><th>up to 1 lb</th><th>up to 2 lb</th><th>up to 4 lb</th></tr></thead><tbody id="shipIntlRows"></tbody></table></div>
+    <div style="margin-top:12px;"><button class="btn ghost sm" onclick="resetShipTable()">Reset to starter rates</button></div>
+    <div class="shipnote">Starter values approximate 2026 commercial rates (a US-average zone). Note the July 2026 USPS change: Ground Advantage under 1&nbsp;lb is now one flat rate per zone. Rates are stored per device — ask to sync across the team via Supabase if you want that.</div>
+  </details>
+  <div class="card mgr-only" style="border-color:var(--warn);">
+    <h2 style="display:flex;align-items:center;gap:8px;">💸 Artist payouts</h2>
+    <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:12px;">
+      Each artist earns their share of the profit (sale price − manufacture cost). Default 40% to the artist, 60% to Digital Alchemists. Change a rate and it applies to that artist's earnings everywhere.
+    </div>
+    <div id="artistRates" class="grid"></div>
+  </div>
+  </div>
 </div>
 
 <footer>© 2026 Digital Alchemists. All rights reserved.</footer>
@@ -1117,10 +1127,12 @@ function resetForm(){
   skuTouched=false; skuEl.value='';
   document.getElementById('formTitle').textContent='Add a product';
   document.getElementById('submitBtn').textContent='Add to master list';
+  var _ed=document.getElementById('editDrawer'); if(_ed){ _ed.open=false; }
 }
 
 function editItem(id){
   const it=items.find(x=>x.id===id); if(!it)return;
+  var _ed=document.getElementById('editDrawer'); if(_ed){ _ed.open=true; }
   document.getElementById('editId').value=it.id;
   titleEl.value=it.title;
   const known=[...sizeEl.options].some(o=>o.value===it.size);
@@ -2288,6 +2300,7 @@ window.daEdSaveText=async function(){
 </script>
 <script>
 /* ===== Manager Artists tab: accounts, their products, and profit split ===== */
+window.daEditFromArtist=function(id){ switchTab('manager'); if(typeof editItem==='function'){ editItem(id); } };
 window.daRenderArtists=function(){
   var box=document.getElementById('artistsList'); if(!box) return;
   var profs=(window.daProfilesAll||[]).filter(function(p){ return p.artist_code; });
@@ -2305,10 +2318,10 @@ window.daRenderArtists=function(){
     var daEarn=profit-earn;
     var rows=mine.map(function(it){
       var stage=it.stage||it.status||'submitted';
-      return '<tr><td>'+esc(it.sku||'')+'</td><td>'+esc(it.title||'')+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(stage)+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+money(it.price)+'</td><td>'+money(typeof artistEarn==='function'?artistEarn(it):(Math.max(0,(Number(it.price)||0)-(Number(it.cost)||0))*share))+'</td></tr>';
+      return '<tr><td>'+esc(it.sku||'')+'</td><td>'+esc(it.title||'')+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(stage)+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+money(it.price)+'</td><td>'+money(typeof artistEarn==='function'?artistEarn(it):(Math.max(0,(Number(it.price)||0)-(Number(it.cost)||0))*share))+'</td><td><button class="btn ghost sm" onclick="daEditFromArtist(\''+it.id+'\')">Edit</button></td></tr>';
     }).join('');
     var table = mine.length
-      ? '<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Size</th><th>Stage</th><th>Qty</th><th>Price</th><th>Artist earns</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      ? '<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Size</th><th>Stage</th><th>Qty</th><th>Price</th><th>Artist earns</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
       : '<p class="sub" style="margin:8px 0;">No products yet.</p>';
     return '<details class="artist-card">'
       +'<summary>'
