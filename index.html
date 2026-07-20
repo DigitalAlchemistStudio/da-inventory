@@ -2293,7 +2293,7 @@ window.daRenderArtists=function(){
   var profs=(window.daProfilesAll||[]).filter(function(p){ return p.artist_code; });
   profs.sort(function(a,b){ return (a.display_name||a.artist_code||'').localeCompare(b.display_name||b.artist_code||''); });
   if(!profs.length){ box.innerHTML='<p class="sub" style="margin:8px 0;">No artist accounts yet.</p>'; return; }
-  var allItems=window.items||[];
+  var allItems=(typeof items!=='undefined'&&items)?items:[];
   function money(n){ return '$'+(Number(n)||0).toFixed(2); }
   box.innerHTML=profs.map(function(p){
     var code=p.artist_code;
