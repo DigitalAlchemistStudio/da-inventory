@@ -1407,6 +1407,14 @@ function setVendors(str){ var parts=(str||'').split('+').map(function(s){return 
   gCategory.addEventListener('change',()=>{ fillProducts(); fillSizes(''); fillFinishes(''); upd(); });
   gProduct.addEventListener('change',()=>{ const sub=subNow(); fillSizes(sub); fillFinishes(sub); upd(); });
   [gArtist,gDesign,gFinish,sizeSel].forEach(el=>el.addEventListener('change',upd));
+  gArtist.addEventListener('change', function(){
+    var art=gArtist.value; if(!art) return;
+    var sku=(skuI.value||'').trim(); if(!sku) return;
+    var known=[]; try{ if(typeof BUILDER!=='undefined'&&BUILDER.artists) known=BUILDER.artists.map(function(a){return a[1];}); }catch(e){}
+    (window.daProfilesAll||[]).forEach(function(p){ if(p.artist_code) known.push(p.artist_code); });
+    var parts=sku.split('-');
+    if(parts.length>1 && known.indexOf(parts[0])>=0 && parts[0]!==art){ parts[0]=art; skuI.value=parts.join('-'); if(window.updateBarcodePreview) window.updateBarcodePreview(); }
+  });
   [gNum,sizeCustom].forEach(el=>el.addEventListener('input',upd));
   skuI.addEventListener('input',()=>{window.skuTouched=true;});
 })();
