@@ -2326,10 +2326,10 @@ window.daRenderArtists=function(){
     var daEarn=profit-earn;
     var rows=mine.map(function(it){
       var stage=it.stage||it.status||'submitted';
-      return '<tr><td>'+esc(it.sku||'')+'</td><td>'+esc(it.title||'')+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(stage)+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+money(it.price)+'</td><td>'+money(typeof artistEarn==='function'?artistEarn(it):(Math.max(0,(Number(it.price)||0)-(Number(it.cost)||0))*share))+'</td><td><button class="btn ghost sm" onclick="daEditFromArtist(\''+it.id+'\')">Edit</button></td></tr>';
+      return '<tr><td>'+esc(it.sku||'')+'</td><td>'+esc(it.title||'')+'</td><td>'+(it.thumb?('<img class="thumb" src="'+it.thumb+'" alt="">'):'')+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(stage)+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+money(it.price)+'</td><td>'+money(typeof artistEarn==='function'?artistEarn(it):(Math.max(0,(Number(it.price)||0)-(Number(it.cost)||0))*share))+'</td><td><button class="btn ghost sm" onclick="daEditFromArtist(\''+it.id+'\')">Edit</button></td></tr>';
     }).join('');
     var table = mine.length
-      ? '<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Size</th><th>Stage</th><th>Qty</th><th>Price</th><th>Artist earns</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      ? '<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Img</th><th>Size</th><th>Stage</th><th>Qty</th><th>Price</th><th>Artist earns</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
       : '<p class="sub" style="margin:8px 0;">No products yet.</p>';
     return '<details class="artist-card">'
       +'<summary>'
