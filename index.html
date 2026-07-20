@@ -264,6 +264,8 @@
   .req-btn.sm{font-size:12.5px;padding:6px 13px;border-radius:8px;}
   .req-btn.ghost{border-color:var(--border);color:var(--muted);}
   .req-btn.ghost:hover{background:var(--panel);color:var(--text);}
+  .req-btn.invite{background:var(--good);border-color:var(--good);color:#052117;}
+  .req-btn.invite:hover{background:var(--good);color:#052117;filter:brightness(1.1);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1992,6 +1994,7 @@ function daRenderRequests(){
     var actions='<div class="req-actions">'
       +(st==='pending'?'<button class="req-btn" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>':'')
       +(st==='pending'?'<button class="req-btn" onclick="daShowDeny(\''+q.id+'\')">Deny</button>':'')
+      +(st!=='denied'?'<button class="req-btn invite" onclick="daInviteReq(\''+q.id+'\')">Invite</button>':'')
       +'<button class="req-btn" onclick="daEmailReq(\''+q.id+'\')">Email</button>'
       +'</div>';
     return '<div class="req-card">'+body+actions+'<div class="req-status '+st+'">'+st+'</div></div>';
@@ -2017,6 +2020,23 @@ window.daSetRequest=function(id,status,note){
   });
 };
 window.daEmailReq=function(id){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return; window.location.href='mailto:'+q.email+'?subject='+encodeURIComponent('Digital Alchemists — your application'); };
+window.daInviteReq=async function(id){
+  var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return;
+  var toast=window.showToast||window.alert;
+  try{
+    var sess=await window.daSB.auth.getSession();
+    var token=sess.data&&sess.data.session&&sess.data.session.access_token;
+    if(!token){ toast('Please sign in again.'); return; }
+    toast('Sending invite to '+q.email+'…');
+    var base=window.DA_SUPABASE_URL.replace(/\/$/,'');
+    var r=await fetch(base+'/functions/v1/invite-user',{ method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'apikey':window.DA_SUPABASE_ANON },
+      body:JSON.stringify({ email:q.email, reqId:id }) });
+    var j=await r.json().catch(function(){ return {}; });
+    if(r.ok && j.ok){ q.status='approved'; q.reviewed_at=new Date().toISOString(); daRenderRequests(); toast('Invite sent to '+q.email+' — they can now set a password and sign in.'); }
+    else { toast('Invite failed: '+(j.error||('HTTP '+r.status))); }
+  }catch(e){ toast('Invite error: '+(e.message||e)); }
+};
 </script>
 <script>
 /* ===== Manager-editable Templates / Resources (Supabase-backed) ===== */
