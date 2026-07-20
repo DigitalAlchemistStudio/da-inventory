@@ -227,6 +227,17 @@
   #authGate.mode-apply .authCard{max-width:440px;}
   #reqCard>summary{list-style:none;}
   #reqCard>summary::-webkit-details-marker{display:none;}
+  .tmpl-editor{border:1px solid var(--accent);border-radius:12px;background:var(--panel2);margin-bottom:16px;padding:0 14px;}
+  .tmpl-editor>summary{list-style:none;cursor:pointer;padding:13px 2px;font-size:15px;color:var(--accent2);font-weight:700;}
+  .tmpl-editor>summary::-webkit-details-marker{display:none;}
+  .tmpl-editor .ed-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;padding:0 0 14px;}
+  .tmpl-editor .ed-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:7px;}
+  .tmpl-editor .ed-h{font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.4px;}
+  .tmpl-editor input,.tmpl-editor select{width:100%;padding:7px 9px;border-radius:7px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:12.5px;}
+  .tmpl-editor input[type=file]{padding:5px;font-size:11px;}
+  .tmpl-editor .ed-files{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+  .tmpl-editor .ed-files label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:2px;}
+  .tmpl-editor .ed-st{font-size:11.5px;color:var(--accent2);min-height:14px;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -548,6 +559,58 @@
     <div class="card">
       <h2>Templates &amp; Resources</h2>
       <p class="sub" style="margin:-6px 0 10px;">Download a print-ready template in your format of choice, design inside the green <b>safe area</b> and extend art out to the red <b>bleed</b>, then attach your finished artwork when you submit a product. Every template is 300&nbsp;DPI and CMYK-ready. The <b>Fits</b> line shows which products &amp; sizes each one covers. <b>Affinity</b> &amp; <b>CSP</b> masters are supplied by a manager — those buttons activate once the file is uploaded.</p>
+      <details class="mgr-only tmpl-editor" id="tmplEditor">
+        <summary>🛠️ Manage templates &amp; resources <span style="font-size:11px;color:var(--muted);font-weight:400;">(manager-only)</span></summary>
+        <div class="ed-grid">
+          <div class="ed-box">
+            <div class="ed-h">Upload / replace a file</div>
+            <select class="daTmplSelect" id="edFileTmpl"></select>
+            <select id="edFileFmt"><option value="">— format —</option><option value="pdf">PDF</option><option value="png">PNG</option><option value="psd">PSD</option><option value="ai">Illustrator (AI)</option><option value="afdesign">Affinity (.afdesign)</option><option value="clip">Clip Studio (.clip)</option></select>
+            <input type="file" id="edFileInput">
+            <button class="btn ghost sm" onclick="daEdUpload()">Upload</button>
+            <div class="ed-st" id="edFileStatus"></div>
+          </div>
+          <div class="ed-box">
+            <div class="ed-h">Add a resource</div>
+            <select class="daSecSelect" id="edResSec"></select>
+            <input id="edResSecNew" placeholder="New section name (if chosen above)">
+            <input id="edResTitle" placeholder="Title (e.g. Brand style guide)">
+            <input id="edResLink" placeholder="Link URL (optional)">
+            <input type="file" id="edResFile">
+            <button class="btn ghost sm" onclick="daEdAddResource()">Add resource</button>
+            <div class="ed-st" id="edResStatus"></div>
+          </div>
+          <div class="ed-box">
+            <div class="ed-h">Add a new template</div>
+            <select class="daSecSelect" id="edTplSec"></select>
+            <input id="edTplSecNew" placeholder="New section name (if chosen above)">
+            <input id="edTplTitle" placeholder="Template name">
+            <input id="edTplDesc" placeholder="Description">
+            <input id="edTplFits" placeholder="Fits (products it covers)">
+            <input id="edTplSizes" placeholder="Sizes">
+            <div class="ed-files">
+              <label>PDF<input type="file" id="edTpl_pdf"></label>
+              <label>PNG<input type="file" id="edTpl_png"></label>
+              <label>PSD<input type="file" id="edTpl_psd"></label>
+              <label>AI<input type="file" id="edTpl_ai"></label>
+              <label>Affinity<input type="file" id="edTpl_afdesign"></label>
+              <label>CSP<input type="file" id="edTpl_clip"></label>
+            </div>
+            <button class="btn ghost sm" onclick="daEdAddTemplate()">Create template</button>
+            <div class="ed-st" id="edTplStatus"></div>
+          </div>
+          <div class="ed-box">
+            <div class="ed-h">Edit template text</div>
+            <select class="daTmplSelect" id="edTxtTmpl" onchange="daEdTxtPrefill()"></select>
+            <input id="edTxtTitle" placeholder="Title">
+            <input id="edTxtDesc" placeholder="Description">
+            <input id="edTxtFits" placeholder="Fits">
+            <input id="edTxtSizes" placeholder="Sizes">
+            <button class="btn ghost sm" onclick="daEdSaveText()">Save text</button>
+            <div class="ed-st" id="edTxtStatus"></div>
+          </div>
+        </div>
+      </details>
       <details class="tmpl-sec" name="tmplsec" open>
         <summary class="tmpl-cat">Stickers &amp; Decals</summary>
         <div class="tmpl-grid">
@@ -1477,6 +1540,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
         window.DA_ARTIST = prof.artist_code||'';
         window.DA_IS_MANAGER = !!prof.is_manager;
       if(prof.is_manager && window.daLoadRequests){ window.daLoadRequests(); }
+      if(window.daLoadResources){ window.daLoadResources(); }
         document.body.classList.toggle('not-manager', !prof.is_manager);
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
         return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles() ]);
@@ -1897,6 +1961,167 @@ window.daSetRequest=function(id,status){
   });
 };
 window.daCopyReqEmail=function(id){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return; try{ navigator.clipboard.writeText(q.email); }catch(e){} (window.showToast||window.alert)('Copied: '+q.email); };
+</script>
+<script>
+/* ===== Manager-editable Templates / Resources (Supabase-backed) ===== */
+window.DA_TMPL_BUCKET='templates';
+window.daResources=[];
+async function daUploadFile(file, prefix){
+  var ext=(file.name.split('.').pop()||'bin').toLowerCase();
+  var path=prefix+'-'+Date.now().toString(36)+'.'+ext;
+  var up=await window.daSB.storage.from(window.DA_TMPL_BUCKET).upload(path, file, {upsert:true});
+  if(up.error) throw up.error;
+  return window.daSB.storage.from(window.DA_TMPL_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+window.daLoadResources=function(){
+  if(!window.daSB) return;
+  window.daSB.from('da_resources').select('*').order('sort',{ascending:true}).then(function(r){
+    if(r.error){ console.error('da_resources',r.error); return; }
+    window.daResources=r.data||[]; daApplyResources(); daBuildEditorOptions();
+  });
+};
+function daTagBuiltins(){
+  document.querySelectorAll('#tab-templates .tmpl-card').forEach(function(card){
+    if(card.dataset.tmpl) return;
+    var pdf=card.querySelector('.tmpl-dl a[href$=".pdf"]');
+    if(pdf){ var m=pdf.getAttribute('href').match(/(tmpl-[a-z0-9-]+)\.pdf/); if(m) card.dataset.tmpl=m[1]; }
+  });
+}
+function daSections(){
+  return [...document.querySelectorAll('#tab-templates details.tmpl-sec > summary.tmpl-cat')].map(function(s){ return s.textContent.trim(); });
+}
+function daSectionGrid(section){
+  var dets=[...document.querySelectorAll('#tab-templates details.tmpl-sec')];
+  for(var i=0;i<dets.length;i++){ var sm=dets[i].querySelector('summary.tmpl-cat'); if(sm && sm.textContent.trim()===section) return dets[i].querySelector('.tmpl-grid'); }
+  var card=document.querySelector('#tab-templates .card');
+  var det=document.createElement('details'); det.className='tmpl-sec da-dyn'; det.setAttribute('name','tmplsec');
+  det.innerHTML='<summary class="tmpl-cat">'+esc(section)+'</summary><div class="tmpl-grid"></div>';
+  card.appendChild(det);
+  return det.querySelector('.tmpl-grid');
+}
+function daFmtButtons(files){
+  var order=[['pdf','PDF',''],['png','PNG','png'],['psd','PSD','alt'],['ai','AI','alt'],['afdesign','Affinity','alt'],['clip','CSP','alt'],['file','Download','']];
+  var html='';
+  order.forEach(function(o){ var u=files[o[0]]; if(u){ html+='<a class="'+o[2]+'" href="'+esc(u)+'" download target="_blank" rel="noopener">'+o[1]+'</a>'; } });
+  return html;
+}
+function daApplyResources(){
+  daTagBuiltins();
+  document.querySelectorAll('#tab-templates .da-dyn').forEach(function(n){ n.remove(); });
+  (window.daResources||[]).forEach(function(r){
+    var files=r.files||{};
+    if(r.kind==='override' && r.tmpl_id){
+      var card=document.querySelector('#tab-templates .tmpl-card[data-tmpl="'+r.tmpl_id+'"]'); if(!card) return;
+      if(r.title){ var nm=card.querySelector('.nm'); if(nm) nm.textContent=r.title; }
+      if(r.description){ var d=card.querySelector('.desc'); if(d) d.textContent=r.description; }
+      var fitsEls=card.querySelectorAll('.fits');
+      if(r.fits && fitsEls[0]){ fitsEls[0].innerHTML='<b>Fits:</b> '+esc(r.fits); }
+      if(r.sizes && fitsEls[1]){ fitsEls[1].innerHTML='<b>Sizes:</b> '+esc(r.sizes); }
+      var dl=card.querySelector('.tmpl-dl');
+      Object.keys(files).forEach(function(fmt){
+        var label={pdf:'PDF',png:'PNG',psd:'PSD',ai:'AI',afdesign:'Affinity',clip:'CSP'}[fmt]; if(!label||!dl) return;
+        var a=[...dl.querySelectorAll('a')].filter(function(x){ return x.textContent.trim()===label; })[0];
+        if(a){ a.setAttribute('href',files[fmt]); a.setAttribute('download',''); a.setAttribute('target','_blank'); a.removeAttribute('onclick'); a.classList.remove('pending'); }
+        else { var na=document.createElement('a'); na.className='alt'; na.href=files[fmt]; na.setAttribute('download',''); na.target='_blank'; na.textContent=label; dl.appendChild(na); }
+      });
+    } else if(r.kind==='template'){
+      var grid=daSectionGrid(r.section||'More templates');
+      var c=document.createElement('div'); c.className='tmpl-card da-dyn';
+      c.innerHTML='<div class="nm">'+esc(r.title||'Untitled')+'</div>'
+        +(r.sizes?'<div class="dim">'+esc(r.sizes)+'</div>':'')
+        +(r.description?'<div class="desc">'+esc(r.description)+'</div>':'')
+        +(r.fits?'<div class="fits"><b>Fits:</b> '+esc(r.fits)+'</div>':'')
+        +'<div class="tmpl-dl">'+(daFmtButtons(files)||'<span class="desc">No files yet</span>')+'</div>';
+      grid.appendChild(c);
+    } else if(r.kind==='resource'){
+      var grid2=daSectionGrid(r.section||'Resources');
+      var links=''; if(r.link){ links+='<a href="'+esc(r.link)+'" target="_blank" rel="noopener">Open link</a>'; }
+      links+=daFmtButtons(files);
+      var rc=document.createElement('div'); rc.className='tmpl-card da-dyn';
+      rc.innerHTML='<div class="nm">'+esc(r.title||'Resource')+'</div>'
+        +(r.description?'<div class="desc">'+esc(r.description)+'</div>':'')
+        +'<div class="tmpl-dl">'+(links||'<span class="desc">No file/link</span>')+'</div>';
+      grid2.appendChild(rc);
+    }
+  });
+}
+function daBuildEditorOptions(){
+  daTagBuiltins();
+  var builtins=[...document.querySelectorAll('#tab-templates .tmpl-card[data-tmpl]')].filter(function(c){return !c.classList.contains('da-dyn');}).map(function(c){ return {id:c.dataset.tmpl, title:(c.querySelector('.nm')||{}).textContent||c.dataset.tmpl}; });
+  var added=(window.daResources||[]).filter(function(r){return r.kind==='template';}).map(function(r){ return {id:r.id, title:(r.title||'(untitled)')+' (added)'}; });
+  var opts='<option value="">— choose a template —</option>'+builtins.map(function(b){return '<option value="B:'+b.id+'">'+esc(b.title)+'</option>';}).join('')+added.map(function(a){return '<option value="R:'+a.id+'">'+esc(a.title)+'</option>';}).join('');
+  document.querySelectorAll('.daTmplSelect').forEach(function(s){ var v=s.value; s.innerHTML=opts; s.value=v; });
+  var sections=daSections();
+  var so=sections.map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+'<option value="__new">+ New section…</option>';
+  document.querySelectorAll('.daSecSelect').forEach(function(s){ var v=s.value; s.innerHTML=so; if(v) s.value=v; });
+}
+window.daEdUpload=async function(){
+  var sel=document.getElementById('edFileTmpl'), fmt=document.getElementById('edFileFmt'), fi=document.getElementById('edFileInput'), st=document.getElementById('edFileStatus');
+  var tv=sel.value, format=fmt.value, file=fi.files[0];
+  if(!tv||!format||!file){ st.textContent='Pick a template, format, and file.'; return; }
+  st.textContent='Uploading…';
+  try{
+    var url=await daUploadFile(file, 'over/'+tv.replace(/[^A-Za-z0-9_-]/g,'')+'/'+format);
+    if(tv.slice(0,2)==='B:'){
+      var tmplId=tv.slice(2);
+      var ex=(window.daResources||[]).filter(function(r){return r.kind==='override'&&r.tmpl_id===tmplId;})[0];
+      var files=Object.assign({}, (ex&&ex.files)||{}); files[format]=url;
+      if(ex){ await window.daSB.from('da_resources').update({files:files}).eq('id',ex.id); }
+      else { await window.daSB.from('da_resources').insert({kind:'override', tmpl_id:tmplId, files:files, created_by:(window.daProfile&&window.daProfile.id)||null}); }
+    } else {
+      var rid=tv.slice(2), ex2=(window.daResources||[]).filter(function(r){return r.id===rid;})[0];
+      var files2=Object.assign({}, (ex2&&ex2.files)||{}); files2[format]=url;
+      await window.daSB.from('da_resources').update({files:files2}).eq('id',rid);
+    }
+    st.textContent='Uploaded ✓'; fi.value=''; daLoadResources();
+  }catch(e){ st.textContent='Error: '+(e.message||e); }
+};
+window.daEdAddResource=async function(){
+  var secSel=document.getElementById('edResSec'), secNew=document.getElementById('edResSecNew'), title=document.getElementById('edResTitle'), link=document.getElementById('edResLink'), fi=document.getElementById('edResFile'), st=document.getElementById('edResStatus');
+  var section=secSel.value==='__new'?(secNew.value.trim()||'Resources'):secSel.value;
+  if(!title.value.trim()){ st.textContent='Enter a title.'; return; }
+  st.textContent='Saving…';
+  try{
+    var files={}; if(fi.files[0]){ files.file=await daUploadFile(fi.files[0], 'res/'+title.value.trim().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30)); }
+    await window.daSB.from('da_resources').insert({kind:'resource', section:section, title:title.value.trim(), link:link.value.trim()||null, files:files, created_by:(window.daProfile&&window.daProfile.id)||null});
+    st.textContent='Added ✓'; title.value=''; link.value=''; fi.value=''; daLoadResources();
+  }catch(e){ st.textContent='Error: '+(e.message||e); }
+};
+window.daEdAddTemplate=async function(){
+  var secSel=document.getElementById('edTplSec'), secNew=document.getElementById('edTplSecNew'), title=document.getElementById('edTplTitle'), desc=document.getElementById('edTplDesc'), fits=document.getElementById('edTplFits'), sizes=document.getElementById('edTplSizes'), st=document.getElementById('edTplStatus');
+  var section=secSel.value==='__new'?(secNew.value.trim()||'More templates'):secSel.value;
+  if(!title.value.trim()){ st.textContent='Enter a title.'; return; }
+  st.textContent='Uploading…';
+  try{
+    var files={}, fmts=['pdf','png','psd','ai','afdesign','clip'];
+    for(var i=0;i<fmts.length;i++){ var el=document.getElementById('edTpl_'+fmts[i]); if(el&&el.files[0]){ files[fmts[i]]=await daUploadFile(el.files[0], 'tpl/'+title.value.trim().replace(/[^A-Za-z0-9_-]/g,'').slice(0,30)+'/'+fmts[i]); } }
+    await window.daSB.from('da_resources').insert({kind:'template', section:section, title:title.value.trim(), description:desc.value.trim()||null, fits:fits.value.trim()||null, sizes:sizes.value.trim()||null, files:files, created_by:(window.daProfile&&window.daProfile.id)||null});
+    st.textContent='Created ✓'; [title,desc,fits,sizes].forEach(function(x){x.value='';}); fmts.forEach(function(fm){var e=document.getElementById('edTpl_'+fm); if(e)e.value='';}); daLoadResources();
+  }catch(e){ st.textContent='Error: '+(e.message||e); }
+};
+window.daEdTxtPrefill=function(){
+  var tv=document.getElementById('edTxtTmpl').value; function set(id,v){ var e=document.getElementById(id); if(e) e.value=v||''; }
+  if(tv.slice(0,2)==='B:'){
+    var card=document.querySelector('#tab-templates .tmpl-card[data-tmpl="'+tv.slice(2)+'"]');
+    if(card){ set('edTxtTitle',(card.querySelector('.nm')||{}).textContent); set('edTxtDesc',(card.querySelector('.desc')||{}).textContent);
+      var f=card.querySelectorAll('.fits'); set('edTxtFits', f[0]?f[0].textContent.replace(/^Fits:\s*/,''):''); set('edTxtSizes', f[1]?f[1].textContent.replace(/^Sizes:\s*/,''):''); }
+  } else if(tv){ var r=(window.daResources||[]).filter(function(x){return x.id===tv.slice(2);})[0]; if(r){ set('edTxtTitle',r.title); set('edTxtDesc',r.description); set('edTxtFits',r.fits); set('edTxtSizes',r.sizes); } }
+};
+window.daEdSaveText=async function(){
+  var sel=document.getElementById('edTxtTmpl'), st=document.getElementById('edTxtStatus');
+  var tv=sel.value; if(!tv){ st.textContent='Pick a template.'; return; }
+  st.textContent='Saving…';
+  var g=function(id){ var e=document.getElementById(id); return e?(e.value.trim()||null):null; };
+  var payload={ title:g('edTxtTitle'), description:g('edTxtDesc'), fits:g('edTxtFits'), sizes:g('edTxtSizes') };
+  try{
+    if(tv.slice(0,2)==='B:'){
+      var tmplId=tv.slice(2), ex=(window.daResources||[]).filter(function(r){return r.kind==='override'&&r.tmpl_id===tmplId;})[0];
+      if(ex){ await window.daSB.from('da_resources').update(payload).eq('id',ex.id); }
+      else { payload.kind='override'; payload.tmpl_id=tmplId; payload.created_by=(window.daProfile&&window.daProfile.id)||null; await window.daSB.from('da_resources').insert(payload); }
+    } else { await window.daSB.from('da_resources').update(payload).eq('id', tv.slice(2)); }
+    st.textContent='Saved ✓'; daLoadResources();
+  }catch(e){ st.textContent='Error: '+(e.message||e); }
+};
 </script>
 </body>
 </html>
