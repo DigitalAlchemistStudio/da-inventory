@@ -220,6 +220,13 @@
   @media(max-width:360px){
     .stats{grid-template-columns:1fr;}
   }
+  #authGate .applyOnly{display:none;}
+  #authGate.mode-apply .applyOnly{display:block;}
+  #authGate.mode-apply .loginOnly{display:none;}
+  #authGate textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font-size:14px;font-family:inherit;resize:vertical;min-height:62px;}
+  #authGate.mode-apply .authCard{max-width:440px;}
+  #reqCard>summary{list-style:none;}
+  #reqCard>summary::-webkit-details-marker{display:none;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -227,6 +234,7 @@
   // Supabase Dashboard -> Project Settings -> API  (see SETUP.md)
   window.DA_SUPABASE_URL  = "https://ykjsajkeatxpwizzmkkp.supabase.co";
   window.DA_SUPABASE_ANON = "sb_publishable_cdJSb1nHWuZWX5GPYjUeCA_oPPSQlDV";
+  window.DA_WEB3FORMS_KEY  = ""; // paste a free web3forms.com access key to get emailed on each application
 </script>
 </head>
 <body>
@@ -234,27 +242,27 @@
   <div class="authCard">
     <img id="authLogo" class="authLogo" alt="Digital Alchemists">
     <h2>Digital Alchemists</h2>
-    <div class="sub">Inventory &amp; SKU Manager — sign in to the shared catalog.</div>
-    <div class="signupOnly">
-      <div class="row2">
-        <div>
-          <label>Your name</label>
-          <input id="auName" placeholder="e.g. April">
-        </div>
-        <div>
-          <label>Artist code</label>
-          <input id="auCode" placeholder="PIC" maxlength="4" style="text-transform:uppercase;">
-        </div>
-      </div>
+    <div class="sub" id="auSub">Inventory &amp; SKU Manager — sign in to the shared catalog.</div>
+    <div class="applyOnly">
+      <label>Your name *</label>
+      <input id="auName" placeholder="Your name or studio">
+      <label>Portfolio / social links</label>
+      <input id="auPortfolio" placeholder="Instagram, ArtStation, website…">
+      <label>Shop or brand name</label>
+      <input id="auBrand" placeholder="If you have one">
+      <label>What you make / mediums</label>
+      <input id="auMediums" placeholder="e.g. anime charms, stickers, apparel art">
+      <label>Why you&rsquo;d like to join</label>
+      <textarea id="auWhy" placeholder="Tell us a little about you and your work…"></textarea>
     </div>
-    <label>Email</label>
+    <label>Email *</label>
     <input id="auEmail" type="email" placeholder="you@email.com" autocomplete="username">
-    <label>Password</label>
-    <input id="auPass" type="password" placeholder="password" autocomplete="current-password">
+    <label class="loginOnly">Password</label>
+    <input id="auPass" class="loginOnly" type="password" placeholder="password" autocomplete="current-password">
     <button class="authBtn" id="auBtn" onclick="daAuthSubmit()">Sign in</button>
     <div class="err" id="auErr"></div>
-    <div class="toggle" id="auToggle">New here? <a onclick="daAuthMode('signup')">Create an account</a></div>
-    <div class="toggle" id="auToggle2" style="display:none;">Already have an account? <a onclick="daAuthMode('login')">Sign in</a></div>
+    <div class="toggle loginOnly" id="auToggle">Want to join Digital Alchemists? <a onclick="daAuthMode('apply')">Apply for access</a></div>
+    <div class="toggle applyOnly" id="auToggle2">Already approved? <a onclick="daAuthMode('login')">Sign in</a></div>
   </div>
 </div>
 <header>
@@ -515,6 +523,13 @@
       </table>
     </div>
   </div>
+  <details class="card mgr-only" id="reqCard" style="border-color:var(--accent2);">
+    <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
+      <span>🧾 Access requests <span id="reqCount" class="pill warn" style="font-weight:600;">—</span></span><span style="font-size:12px;color:var(--muted);">▾</span>
+    </summary>
+    <p class="sub" style="margin:10px 0;">People who applied to join Digital Alchemists. Review their work, then <b>Approve</b> and invite them in Supabase &rarr; Authentication &rarr; Users &rarr; Invite. Public self-signup stays closed.</p>
+    <div id="reqList"></div>
+  </details>
   <details class="card mgr-only" id="shipCard" style="border-color:var(--accent);">
     <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;display:flex;align-items:center;justify-content:space-between;">
       <span>📦 Shipping rates &amp; verification <span style="font-size:12px;color:var(--muted);font-weight:400;">— Pirate Ship (manager-only)</span></span><span style="font-size:12px;color:var(--muted);">▾</span>
@@ -1347,9 +1362,9 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
 
   window.daAuthMode = function(mode){
     gate.className = 'mode-'+mode;
-    document.getElementById('auBtn').textContent = mode==='signup'?'Create account':'Sign in';
-    document.getElementById('auToggle').style.display  = mode==='signup'?'none':'block';
-    document.getElementById('auToggle2').style.display = mode==='signup'?'block':'none';
+    var apply = mode==='apply';
+    document.getElementById('auBtn').textContent = apply?'Submit application':'Sign in';
+    var sub=document.getElementById('auSub'); if(sub){ sub.textContent = apply?'Apply to join the Digital Alchemists artist roster — we review every application.':'Inventory & SKU Manager — sign in to the shared catalog.'; }
     document.getElementById('auErr').textContent='';
   };
   window.daAuthSubmit = function(){
@@ -1357,7 +1372,8 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
     var pass=document.getElementById('auPass').value;
     var err=document.getElementById('auErr'); err.textContent='';
     var btn=document.getElementById('auBtn'); btn.disabled=true;
-    var signup = gate.className==='mode-signup';
+    if(gate.className==='mode-apply'){ window.daApplySubmit(btn,err); return; }
+    var signup = false;
     var done=function(e){ btn.disabled=false; if(e){ err.textContent = e.message||String(e); } };
     if(signup){
       var name=document.getElementById('auName').value.trim();
@@ -1459,6 +1475,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
         var ba=document.getElementById('bArtist'); if(ba) ba.value=(prof.display_name||'')+' ('+(prof.artist_code||'?')+')';
         window.DA_ARTIST = prof.artist_code||'';
         window.DA_IS_MANAGER = !!prof.is_manager;
+      if(prof.is_manager && window.daLoadRequests){ window.daLoadRequests(); }
         document.body.classList.toggle('not-manager', !prof.is_manager);
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
         return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles() ]);
@@ -1812,6 +1829,72 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
   /* Route blocking native alert() through the non-blocking toast */
   window.alert=function(m){ try{ window.showToast(m); }catch(e){ console.log('toast',m); } };
 })();
+</script>
+<script>
+/* ===== Vetted signup: application submit + manager review queue ===== */
+window.daApplySubmit=function(btn,err){
+  btn=btn||document.getElementById('auBtn'); err=err||document.getElementById('auErr');
+  var g=function(id){ var e=document.getElementById(id); return e?(e.value||'').trim():''; };
+  var name=g('auName'), email=g('auEmail');
+  if(!name||!email){ err.textContent='Please enter your name and email.'; btn.disabled=false; return; }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ err.textContent='Please enter a valid email.'; btn.disabled=false; return; }
+  var rec={ name:name, email:email, portfolio:g('auPortfolio')||null, brand:g('auBrand')||null, mediums:g('auMediums')||null, why:g('auWhy')||null, status:'pending' };
+  btn.disabled=true; err.textContent='';
+  window.daSB.from('access_requests').insert(rec).then(function(r){
+    if(r.error){ err.textContent='Could not submit: '+(r.error.message||r.error); btn.disabled=false; return; }
+    try{
+      if(window.DA_WEB3FORMS_KEY){
+        fetch('https://api.web3forms.com/submit',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
+          body:JSON.stringify({access_key:window.DA_WEB3FORMS_KEY, subject:'New Digital Alchemists access request — '+name, from_name:'Digital Alchemists Signup',
+            name:name, email:email, portfolio:rec.portfolio, brand:rec.brand, makes:rec.mediums, why:rec.why})});
+      }
+    }catch(e){}
+    var logo=(document.getElementById('authLogo')||{}).src||'';
+    var card=document.querySelector('#authGate .authCard');
+    card.innerHTML='<img class="authLogo" src="'+logo+'" alt=""><h2>Application received</h2>'
+      +'<div class="sub">Thanks, '+esc(name)+'! Your request to join Digital Alchemists is in. We review every application and will email you at <b>'+esc(email)+'</b> if you’re approved.</div>'
+      +'<button class="authBtn" onclick="location.reload()">Done</button>';
+  });
+};
+window.daLoadRequests=function(){
+  if(!window.daSB) return;
+  window.daSB.from('access_requests').select('*').order('created_at',{ascending:false}).then(function(r){
+    if(r.error){ console.error('access_requests',r.error); return; }
+    window.daRequests=r.data||[]; daRenderRequests();
+  });
+};
+function daRenderRequests(){
+  var list=document.getElementById('reqList'); if(!list) return;
+  var reqs=window.daRequests||[];
+  var pend=reqs.filter(function(x){ return (x.status||'pending')==='pending'; }).length;
+  var cnt=document.getElementById('reqCount'); if(cnt){ cnt.textContent=pend?(pend+' pending'):'none pending'; cnt.className='pill '+(pend?'warn':'good'); }
+  if(!reqs.length){ list.innerHTML='<p class="sub" style="margin:8px 0;">No applications yet.</p>'; return; }
+  function line(l,v){ return v?('<div style="font-size:12.5px;margin:2px 0;"><span style="color:var(--muted)">'+l+':</span> '+esc(v)+'</div>'):''; }
+  list.innerHTML=reqs.map(function(q){
+    var st=q.status||'pending';
+    var pill=st==='approved'?'good':(st==='denied'?'bad':'warn');
+    var when=q.created_at?new Date(q.created_at).toLocaleDateString():'';
+    return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px;background:var(--panel2);text-align:left;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">'
+      +'<b style="font-size:14px;">'+esc(q.name||'?')+'</b><span class="pill '+pill+'">'+esc(st)+'</span></div>'
+      +'<div style="font-size:12.5px;color:var(--accent2);margin:3px 0;">'+esc(q.email||'')+(when?(' &middot; <span style="color:var(--muted)">'+when+'</span>'):'')+'</div>'
+      +line('Portfolio',q.portfolio)+line('Brand',q.brand)+line('Makes',q.mediums)+line('Why',q.why)
+      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'
+      +(st!=='approved'?'<button class="btn ghost sm" onclick="daSetRequest(\''+q.id+'\',\'approved\')">Approve</button>':'')
+      +(st!=='denied'?'<button class="btn ghost sm" onclick="daSetRequest(\''+q.id+'\',\'denied\')">Deny</button>':'')
+      +'<button class="btn ghost sm" onclick="daCopyReqEmail(\''+q.id+'\')">Copy email</button>'
+      +'</div></div>';
+  }).join('');
+}
+window.daSetRequest=function(id,status){
+  window.daSB.from('access_requests').update({ status:status, reviewed_at:new Date().toISOString(), reviewed_by:(window.daProfile&&window.daProfile.id)||null }).eq('id',id).then(function(r){
+    if(r.error){ (window.showToast||window.alert)('Update failed: '+(r.error.message||r.error)); return; }
+    (window.daRequests||[]).forEach(function(x){ if(x.id===id){ x.status=status; } });
+    daRenderRequests();
+    if(status==='approved'){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; (window.showToast||window.alert)('Approved '+((q&&q.name)||'')+'. Now invite '+((q&&q.email)||'them')+' in Supabase → Authentication → Users → Invite.'); }
+  });
+};
+window.daCopyReqEmail=function(id){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return; try{ navigator.clipboard.writeText(q.email); }catch(e){} (window.showToast||window.alert)('Copied: '+q.email); };
 </script>
 </body>
 </html>
