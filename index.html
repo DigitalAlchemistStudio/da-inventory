@@ -354,14 +354,6 @@
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <span class="acct-chip" id="acctChip" style="display:none;"></span>
     <button class="btn ghost sm" id="signOutBtn" style="display:none;" onclick="daSignOut()">Sign out</button>
-    <button class="btn ghost sm mgr-only" onclick="document.getElementById('csvFile').click()">Import CSV</button>
-    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(event)">
-    <button class="btn ghost sm mgr-only" onclick="exportCSV()">Export CSV</button>
-    <button class="btn ghost sm mgr-only" onclick="exportAllImages()">Export images</button>
-    <button class="btn ghost sm mgr-only" onclick="exportShopify()">Push → Shopify CSV</button>
-    <button class="btn ghost sm mgr-only" onclick="printBarcodes()">Print barcodes</button>
-    <button class="btn ghost sm mgr-only" onclick="loadDACatalog()">Load DA Catalog</button>
-    <button class="btn ghost sm mgr-only" onclick="loadDemo()">Load sample rows</button>
   </div>
 </header>
 
@@ -937,6 +929,20 @@
     </div>
   </div>
   <div id="tab-utilities" class="tabpanel">
+  <div class="card mgr-only" style="border-color:var(--accent2);">
+    <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
+    <p class="sub" style="margin:-6px 0 12px;">Import and export your catalog, push to Shopify, print barcodes, and load starter data — these used to sit in the top bar.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn ghost sm mgr-only" onclick="document.getElementById('csvFile').click()">Import CSV</button>
+      <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(event)">
+      <button class="btn ghost sm mgr-only" onclick="exportCSV()">Export CSV</button>
+      <button class="btn ghost sm mgr-only" onclick="exportAllImages()">Export images</button>
+      <button class="btn ghost sm mgr-only" onclick="exportShopify()">Push → Shopify CSV</button>
+      <button class="btn ghost sm mgr-only" onclick="printBarcodes()">Print barcodes</button>
+      <button class="btn ghost sm mgr-only" onclick="loadDACatalog()">Load DA Catalog</button>
+      <button class="btn ghost sm mgr-only" onclick="loadDemo()">Load sample rows</button>
+    </div>
+  </div>
   <div class="card mgr-only" style="border-color:var(--accent);">
     <h2 style="display:flex;align-items:center;gap:8px;">🔄 Shopify Sync <span class="pill good" style="font-weight:600;">Shopify = source of truth</span></h2>
     <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:14px;">
