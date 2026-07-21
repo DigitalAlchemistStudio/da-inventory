@@ -1942,7 +1942,7 @@ function daShareFor(it){
 function artistEarn(it){ var z=(Number(it.price)||0)-(Number(it.cost)||0); if(z<0)z=0; return z*daShareFor(it); }
 window.daLoadProfiles=function(){
   if(!window.daSB) return Promise.resolve();
-  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email').then(function(r){
+  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email,real_name').then(function(r){
     if(r.error){ console.error(r.error); return; }
     window.daProfilesAll=r.data||[];
     window.daShareMap={};
@@ -2403,7 +2403,7 @@ window.daRenderArtists=function(){
       : '<p class="sub" style="margin:8px 0;">No products yet.</p>';
     return '<details class="artist-card">'
       +'<summary>'
-        +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span></span>'
+        +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span>'+(p.real_name?'<span class="a-real" style="display:block;font-size:11px;color:var(--muted,#8aa6cc);font-weight:400;margin-top:1px;">'+esc(p.real_name)+'</span>':'')+'</span>'
         +'<span class="a-meta">'+mine.length+' product'+(mine.length===1?'':'s')+' &nbsp;·&nbsp; Artist '+apct+'% / DA '+dpct+'% &nbsp;·&nbsp; earns '+money(earn)+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--warn,#e0a030)">no account yet</span>':'')+'</span>'
       +'</summary>'
       +'<div class="a-body">'
@@ -2517,7 +2517,9 @@ window.daRenderMyDocs=function(){
   m.innerHTML='<div style="width:100%;max-width:540px;background:var(--panel,#102647);border:1px solid var(--border,#1E3E6E);border-radius:14px;padding:22px;box-shadow:0 16px 50px rgba(0,0,0,.5);color:var(--text,#e7f2fb);">'
    +'<h3 style="margin:0 0 4px;">Edit artist</h3>'
    +'<div id="aeCtx" style="color:var(--muted,#8aa6cc);font-size:12.5px;margin-bottom:14px;"></div>'
-   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Display name</label>'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Actual name (private — records &amp; payouts)</label>'
+   +'<input id="aeReal" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Nickname / Handle (shown in the app)</label>'
    +'<input id="aeName" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
    +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Artist code (2-4 letters — appears in every SKU)</label><br>'
    +'<input id="aeCode" maxlength="4" style="width:130px;text-transform:uppercase;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
@@ -2544,6 +2546,8 @@ window.daEditArtist=function(code){
   window._aeArmed=false;
   document.getElementById('aeName').value=name;
   document.getElementById('aeName').disabled=!prof;
+  document.getElementById('aeReal').value=prof?(prof.real_name||''):'';
+  document.getElementById('aeReal').disabled=!prof;
   document.getElementById('aeCode').value=code;
   document.getElementById('aeCtx').textContent=prof?('Account: '+(prof.email||'this artist')):'No account yet (artist inferred from SKUs) — you can change the code; the display name is derived from it.';
   document.getElementById('aeWarn').textContent='';
@@ -2581,11 +2585,12 @@ window.daArtistRenameApply=function(){
   var codeChanged=newCode && newCode!==oldCode;
   if(codeChanged && window._aeCollide && window._aeCollide.length){ if(window.showToast)showToast('Resolve target-SKU collisions first.','error'); return; }
   if(!codeChanged){
-    if(_aeState.id && newName){ // name-only update
-      window.daSB.from('profiles').update({display_name:newName}).eq('id',_aeState.id).then(function(res){
+    if(_aeState.id){
+      var _real=(document.getElementById('aeReal').value||'').trim()||null;
+      window.daSB.from('profiles').update({display_name:newName, real_name:_real}).eq('id',_aeState.id).then(function(res){
         if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
-        (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id) p.display_name=newName; });
-        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Display name updated.','success');
+        (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ p.display_name=newName; p.real_name=_real; } });
+        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Artist updated.','success');
       });
     } else { daArtistEditClose(); }
     return;
@@ -2616,8 +2621,8 @@ window.daArtistRenameApply=function(){
     }
   };
   if(_aeState.id){
-    var upd={artist_code:newCode}; if(newName) upd.display_name=newName;
-    window.daSB.from('profiles').update(upd).eq('id',_aeState.id).then(function(res){ if(res&&res.error){ console.error(res.error); if(window.showToast)showToast('SKUs saved; profile update failed: '+(res.error.message||''),'error'); } finish(); });
+    var upd={artist_code:newCode}; if(newName) upd.display_name=newName; upd.real_name=(document.getElementById('aeReal').value||'').trim()||null;
+    window.daSB.from('profiles').update(upd).eq('id',_aeState.id).then(function(res){ if(res&&res.error){ console.error(res.error); if(window.showToast)showToast('SKUs saved; profile update failed: '+(res.error.message||''),'error'); } else { (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ if(newName)p.display_name=newName; p.real_name=upd.real_name; } }); } finish(); });
   } else { finish(); }
 };
 </script>
