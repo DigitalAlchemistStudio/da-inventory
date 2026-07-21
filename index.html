@@ -1698,7 +1698,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
       if(window.daLoadDocs){ window.daLoadDocs(); }
         document.body.classList.toggle('not-manager', !prof.is_manager);
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
-        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles() ]);
+        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles(), window.daLoadArtistMeta() ]);
       });
     }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); })
       .catch(function(e){ console.error('boot',e); });
@@ -1948,6 +1948,16 @@ window.daLoadProfiles=function(){
     window.daShareMap={};
     window.daProfilesAll.forEach(function(p){ if(p.artist_code) window.daShareMap[(p.artist_code+'').toUpperCase()]=(p.artist_share!=null?p.artist_share:0.40); });
     if(window.daRenderRates) window.daRenderRates();
+    if(window.daRenderArtists) window.daRenderArtists();
+  });
+};
+window.daArtistMeta={};
+window.daLoadArtistMeta=function(){
+  if(!window.daSB) return Promise.resolve();
+  return window.daSB.from('artists').select('*').then(function(r){
+    if(r.error){ console.error('artists',r.error); return; }
+    window.daArtistMeta={};
+    (r.data||[]).forEach(function(a){ if(a.code) window.daArtistMeta[(a.code+'').toUpperCase()]={display_name:a.display_name||'',real_name:a.real_name||''}; });
     if(window.daRenderArtists) window.daRenderArtists();
   });
 };
@@ -2371,7 +2381,7 @@ window.daArtistBuckets=function(){
     if(!code||!window.daIsArtistCode(code)){ hasUnassigned=true; return; }
     if(have[code]||seen[code]) return;
     seen[code]=true;
-    profs.push({id:null,artist_code:code,display_name:(NAMEMAP[code]||code),artist_share:0.40,email:'',noAccount:true});
+    var _meta=(window.daArtistMeta||{})[code]||{}; profs.push({id:null,artist_code:code,display_name:(_meta.display_name||NAMEMAP[code]||code),real_name:_meta.real_name||'',artist_share:0.40,email:'',noAccount:true});
   });
   profs.sort(function(a,b){ return (a.display_name||a.artist_code||'').localeCompare(b.display_name||b.artist_code||''); });
   if(hasUnassigned){ profs.push({id:null,artist_code:'UNASSIGNED',display_name:'Unassigned / POD',artist_share:0,email:'',noAccount:true,unassigned:true}); }
@@ -2541,15 +2551,16 @@ window.daEditArtist=function(code){
   code=(code||'').toUpperCase();
   var prof=(window.daProfilesAll||[]).filter(function(p){return (p.artist_code||'').toUpperCase()===code;})[0];
   var NAMEMAP={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',COL:'Colab',DA:'Digital Alchemists'};
-  var name=prof?(prof.display_name||''):(NAMEMAP[code]||code);
+  var _meta=(window.daArtistMeta||{})[code]||{};
+  var name=prof?(prof.display_name||''):(_meta.display_name||NAMEMAP[code]||code);
   _aeState={code:code,id:prof?prof.id:null,noAccount:!prof};
   window._aeArmed=false;
   document.getElementById('aeName').value=name;
-  document.getElementById('aeName').disabled=!prof;
-  document.getElementById('aeReal').value=prof?(prof.real_name||''):'';
-  document.getElementById('aeReal').disabled=!prof;
+  document.getElementById('aeName').disabled=false;
+  document.getElementById('aeReal').value=prof?(prof.real_name||''):(_meta.real_name||'');
+  document.getElementById('aeReal').disabled=false;
   document.getElementById('aeCode').value=code;
-  document.getElementById('aeCtx').textContent=prof?('Account: '+(prof.email||'this artist')):'No account yet (artist inferred from SKUs) — you can change the code; the display name is derived from it.';
+  document.getElementById('aeCtx').textContent=prof?('Account: '+(prof.email||'this artist')):'No account yet — the actual name & handle are saved to the artist directory; you can also change the code.';
   document.getElementById('aeWarn').textContent='';
   daArtistRenamePreview();
   document.getElementById('artistEditModal').style.display='flex';
@@ -2585,14 +2596,20 @@ window.daArtistRenameApply=function(){
   var codeChanged=newCode && newCode!==oldCode;
   if(codeChanged && window._aeCollide && window._aeCollide.length){ if(window.showToast)showToast('Resolve target-SKU collisions first.','error'); return; }
   if(!codeChanged){
+    var _real=(document.getElementById('aeReal').value||'').trim()||null;
     if(_aeState.id){
-      var _real=(document.getElementById('aeReal').value||'').trim()||null;
       window.daSB.from('profiles').update({display_name:newName, real_name:_real}).eq('id',_aeState.id).then(function(res){
         if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
         (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ p.display_name=newName; p.real_name=_real; } });
         if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Artist updated.','success');
       });
-    } else { daArtistEditClose(); }
+    } else {
+      window.daSB.from('artists').upsert({code:oldCode, display_name:newName||null, real_name:_real, updated_at:new Date().toISOString()}).then(function(res){
+        if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
+        window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[oldCode]={display_name:newName||'',real_name:_real||''};
+        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Artist updated.','success');
+      });
+    }
     return;
   }
   // destructive code change -> two-click confirm
@@ -2623,7 +2640,11 @@ window.daArtistRenameApply=function(){
   if(_aeState.id){
     var upd={artist_code:newCode}; if(newName) upd.display_name=newName; upd.real_name=(document.getElementById('aeReal').value||'').trim()||null;
     window.daSB.from('profiles').update(upd).eq('id',_aeState.id).then(function(res){ if(res&&res.error){ console.error(res.error); if(window.showToast)showToast('SKUs saved; profile update failed: '+(res.error.message||''),'error'); } else { (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ if(newName)p.display_name=newName; p.real_name=upd.real_name; } }); } finish(); });
-  } else { finish(); }
+  } else {
+    var _realC=(document.getElementById('aeReal').value||'').trim()||null;
+    window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[newCode]={display_name:(newName||''),real_name:(_realC||'')}; delete window.daArtistMeta[oldCode];
+    window.daSB.from('artists').upsert({code:newCode, display_name:newName||null, real_name:_realC, updated_at:new Date().toISOString()}).then(function(res){ if(res&&res.error) console.error('artists upsert',res.error); finish(); });
+  }
 };
 </script>
 </body>
