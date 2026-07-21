@@ -989,6 +989,11 @@
   </div>
   </div>
   <div id="tab-documents" class="tabpanel">
+    <div class="card mgr-only">
+      <h2>🖋️ Artist contracts</h2>
+      <p class="sub" style="margin:-6px 0 12px;">Every artist and their signing status. Click an artist to view or manage each document.</p>
+      <div id="allArtistDocs"></div>
+    </div>
     <div class="card">
       <h2>📄 My documents</h2>
       <p class="sub" style="margin:-6px 0 12px;">Your agreements with Digital Alchemists and their signing status. Documents are managed by a manager — reach out if anything looks off.</p>
@@ -1700,7 +1705,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
         return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles(), window.daLoadArtistMeta() ]);
       });
-    }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); })
+    }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); if(window.daRenderAllArtistDocs) window.daRenderAllArtistDocs(); })
       .catch(function(e){ console.error('boot',e); });
   };
 
@@ -2452,6 +2457,7 @@ window.daLoadDocs=function(){
     window.daDocs=r.data||[];
     if(typeof daRenderMyDocs==='function') daRenderMyDocs();
     if(typeof daRenderArtists==='function') daRenderArtists();
+    if(typeof daRenderAllArtistDocs==='function') daRenderAllArtistDocs();
   });
 };
 function daDocRow(code,key){ return (window.daDocs||[]).filter(function(d){ return d.artist_code===code && d.doc_key===key; })[0]||null; }
@@ -2645,6 +2651,28 @@ window.daArtistRenameApply=function(){
     window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[newCode]={display_name:(newName||''),real_name:(_realC||'')}; delete window.daArtistMeta[oldCode];
     window.daSB.from('artists').upsert({code:newCode, display_name:newName||null, real_name:_realC, updated_at:new Date().toISOString()}).then(function(res){ if(res&&res.error) console.error('artists upsert',res.error); finish(); });
   }
+};
+</script>
+<script>
+/* ===== Manager: all-artists contracts overview (Documents tab) ===== */
+window.daRenderAllArtistDocs=function(){
+  var box=document.getElementById('allArtistDocs'); if(!box) return;
+  if(!window.DA_IS_MANAGER){ box.innerHTML=''; return; }
+  var profs=(window.daArtistBuckets?window.daArtistBuckets():[]).filter(function(p){ return !p.unassigned; });
+  if(!profs.length){ box.innerHTML='<p class="sub" style="margin:8px 0;">No artists yet.</p>'; return; }
+  var total=(window.DA_DOCS||[]).length, fully=0;
+  var html=profs.map(function(p){
+    var code=(p.artist_code||'').toUpperCase();
+    var pend=(typeof daDocsPending==='function')?daDocsPending(code):total;
+    var signed=total-pend; if(pend===0) fully++;
+    var badge=pend?('<span class="pill warn">'+pend+' pending</span>'):'<span class="pill good">all signed</span>';
+    var body=(typeof daArtistDocsHtml==='function')?daArtistDocsHtml(code):'';
+    return '<details class="artist-card"><summary>'
+      +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span>'+(p.real_name?'<span class="a-real" style="display:block;font-size:11px;color:var(--muted,#8aa6cc);font-weight:400;">'+esc(p.real_name)+'</span>':'')+'</span>'
+      +'<span class="a-meta">'+signed+' / '+total+' documents &nbsp;·&nbsp; '+badge+'</span>'
+      +'</summary><div class="a-body">'+body+'</div></details>';
+  }).join('');
+  box.innerHTML='<p class="sub" style="margin:0 0 10px;"><b>'+fully+'</b> of '+profs.length+' artists fully signed &amp; verified.</p>'+html;
 };
 </script>
 </body>
