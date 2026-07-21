@@ -2407,6 +2407,7 @@ window.daRenderArtists=function(){
         +'<span class="a-meta">'+mine.length+' product'+(mine.length===1?'':'s')+' &nbsp;·&nbsp; Artist '+apct+'% / DA '+dpct+'% &nbsp;·&nbsp; earns '+money(earn)+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--warn,#e0a030)">no account yet</span>':'')+'</span>'
       +'</summary>'
       +'<div class="a-body">'
+        +(p.unassigned?'':'<div style="text-align:right;margin:-2px 0 6px;"><button class="btn ghost sm" onclick="daEditArtist(\''+esc(code)+'\')">\u270e Edit artist</button></div>')
         +'<div class="a-stats">'
           +'<div><b>'+mine.length+'</b><span>products</span></div>'
           +'<div><b>'+qty+'</b><span>units on hand</span></div>'
@@ -2505,6 +2506,119 @@ window.daRenderMyDocs=function(){
     return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+dot(r.artist_signed)+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+dsb+'</td></tr>';
   }).join('');
   box.innerHTML=banner+'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Document</th><th>You signed</th><th>Company signed</th><th>Verified</th><th style="text-align:left;">File</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+};
+</script>
+<script>
+/* ===== Manager: edit an artist (display name + SKU code) with confirm + SKU propagation ===== */
+(function(){
+  if(document.getElementById('artistEditModal')) return;
+  var m=document.createElement('div'); m.id='artistEditModal';
+  m.style.cssText='position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(4,12,24,.62);padding:16px;';
+  m.innerHTML='<div style="width:100%;max-width:540px;background:var(--panel,#102647);border:1px solid var(--border,#1E3E6E);border-radius:14px;padding:22px;box-shadow:0 16px 50px rgba(0,0,0,.5);color:var(--text,#e7f2fb);">'
+   +'<h3 style="margin:0 0 4px;">Edit artist</h3>'
+   +'<div id="aeCtx" style="color:var(--muted,#8aa6cc);font-size:12.5px;margin-bottom:14px;"></div>'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Display name</label>'
+   +'<input id="aeName" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Artist code (2-4 letters — appears in every SKU)</label><br>'
+   +'<input id="aeCode" maxlength="4" style="width:130px;text-transform:uppercase;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<div id="aePreview" style="font-size:12.5px;line-height:1.55;background:var(--panel2,#16305A);border:1px solid var(--border,#1E3E6E);border-radius:8px;padding:10px 12px;max-height:230px;overflow:auto;margin-bottom:8px;"></div>'
+   +'<div id="aeWarn" style="color:var(--bad,#e05c5c);font-size:12.5px;min-height:16px;margin-bottom:10px;"></div>'
+   +'<div style="display:flex;gap:10px;justify-content:flex-end;">'
+     +'<button class="btn ghost sm" onclick="daArtistEditClose()">Cancel</button>'
+     +'<button class="btn sm" id="aeApply" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daArtistRenameApply()">Apply</button>'
+   +'</div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('input',function(e){ if(e.target&&(e.target.id==='aeCode'||e.target.id==='aeName')){ window._aeArmed=false; daArtistRenamePreview(); } });
+  m.addEventListener('click',function(e){ if(e.target===m) daArtistEditClose(); });
+})();
+
+var _aeState={code:'',id:null,noAccount:false};
+window._aeArmed=false;
+
+window.daEditArtist=function(code){
+  code=(code||'').toUpperCase();
+  var prof=(window.daProfilesAll||[]).filter(function(p){return (p.artist_code||'').toUpperCase()===code;})[0];
+  var NAMEMAP={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',COL:'Colab',DA:'Digital Alchemists'};
+  var name=prof?(prof.display_name||''):(NAMEMAP[code]||code);
+  _aeState={code:code,id:prof?prof.id:null,noAccount:!prof};
+  window._aeArmed=false;
+  document.getElementById('aeName').value=name;
+  document.getElementById('aeName').disabled=!prof;
+  document.getElementById('aeCode').value=code;
+  document.getElementById('aeCtx').textContent=prof?('Account: '+(prof.email||'this artist')):'No account yet (artist inferred from SKUs) — you can change the code; the display name is derived from it.';
+  document.getElementById('aeWarn').textContent='';
+  daArtistRenamePreview();
+  document.getElementById('artistEditModal').style.display='flex';
+};
+window.daArtistEditClose=function(){ var m=document.getElementById('artistEditModal'); if(m) m.style.display='none'; window._aeArmed=false; };
+
+function _aeItemsFor(code){ var all=(typeof items!=='undefined'&&items)?items:[]; return all.filter(function(it){ return window.daArtistCodeOf(it)===code; }); }
+function _aeRewriteSku(sku,newCode){ var parts=(sku||'').split('-'); if(parts.length){ parts[0]=newCode; } return parts.join('-'); }
+function _aeResetBtn(){ var b=document.getElementById('aeApply'); if(b){ b.textContent='Apply'; b.style.background='var(--accent,#07A5C0)'; b.style.color='#04121f'; } }
+
+window.daArtistRenamePreview=function(){
+  _aeResetBtn();
+  var newCode=(document.getElementById('aeCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  var box=document.getElementById('aePreview'), warn=document.getElementById('aeWarn');
+  var mine=_aeItemsFor(_aeState.code);
+  window._aeNewCode=newCode; window._aeChanges=[]; window._aeCollide=[];
+  if(!newCode){ box.textContent='Enter an artist code.'; return; }
+  if(newCode===_aeState.code){ box.innerHTML='<b>'+mine.length+'</b> product'+(mine.length===1?'':'s')+' under <b>'+esc(_aeState.code)+'</b>. Change the code to rewrite their SKUs'+(_aeState.id?', or just update the display name.':'.'); warn.textContent=''; return; }
+  var existing={}; (items||[]).forEach(function(it){ existing[(it.sku||'').toUpperCase()]=it.id; });
+  var changes=[], collide=[];
+  mine.forEach(function(it){ var ns=_aeRewriteSku(it.sku,newCode); changes.push([it.sku,ns]); var ex=existing[(ns||'').toUpperCase()]; if(ex&&ex!==it.id) collide.push(ns); });
+  var head='<b>'+changes.length+'</b> SKU'+(changes.length===1?'':'s')+' will change ('+esc(_aeState.code)+' → '+esc(newCode)+'):<br>';
+  var list=changes.slice(0,25).map(function(c){ return '<span style="font-family:monospace">'+esc(c[0])+'</span> → <span style="font-family:monospace;color:var(--accent2,#47c5d5)">'+esc(c[1])+'</span>'; }).join('<br>');
+  if(changes.length>25) list+='<br>…and '+(changes.length-25)+' more';
+  box.innerHTML=head+(changes.length?list:'(no products yet)')+'<div style="margin-top:8px;color:var(--muted,#8aa6cc)">Applies in the app now; matching Shopify variant SKUs are queued for sync.</div>';
+  warn.textContent=collide.length?('⚠ '+collide.length+' target SKU(s) already exist — resolve before renaming: '+collide.slice(0,3).join(', ')):'';
+  window._aeChanges=changes; window._aeCollide=collide;
+};
+
+window.daArtistRenameApply=function(){
+  var newCode=window._aeNewCode||'', oldCode=_aeState.code;
+  var newName=document.getElementById('aeName').value.trim();
+  var codeChanged=newCode && newCode!==oldCode;
+  if(codeChanged && window._aeCollide && window._aeCollide.length){ if(window.showToast)showToast('Resolve target-SKU collisions first.','error'); return; }
+  if(!codeChanged){
+    if(_aeState.id && newName){ // name-only update
+      window.daSB.from('profiles').update({display_name:newName}).eq('id',_aeState.id).then(function(res){
+        if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
+        (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id) p.display_name=newName; });
+        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Display name updated.','success');
+      });
+    } else { daArtistEditClose(); }
+    return;
+  }
+  // destructive code change -> two-click confirm
+  var n=(window._aeChanges||[]).length;
+  if(!window._aeArmed){
+    window._aeArmed=true;
+    var b=document.getElementById('aeApply'); b.textContent='Confirm — rewrite '+n+' SKU'+(n===1?'':'s'); b.style.background='var(--bad,#e05c5c)'; b.style.color='#fff';
+    return;
+  }
+  window._aeArmed=false;
+  var btn=document.getElementById('aeApply'); btn.disabled=true; btn.textContent='Applying…';
+  var renameLog=[];
+  _aeItemsFor(oldCode).forEach(function(it){ var ns=_aeRewriteSku(it.sku,newCode); renameLog.push({old_sku:it.sku,new_sku:ns}); it.sku=ns; it.artistCode=newCode; });
+  (window.daProfilesAll||[]).forEach(function(p){ if((p.artist_code||'').toUpperCase()===oldCode) p.artist_code=newCode; });
+  if(window.daShareMap && window.daShareMap[oldCode]!=null) window.daShareMap[newCode]=window.daShareMap[oldCode];
+  if(window.DA_ARTIST===oldCode) window.DA_ARTIST=newCode;
+  var finish=function(){
+    if(typeof save==='function') save();
+    if(typeof render==='function') render();
+    if(window.daRenderArtists) daRenderArtists();
+    btn.disabled=false; _aeResetBtn(); daArtistEditClose();
+    if(window.showToast) showToast('Renamed '+oldCode+' → '+newCode+' ('+renameLog.length+' SKUs). Shopify sync queued.','success');
+    if(renameLog.length && window.daSB){
+      var rows=renameLog.map(function(r){ return {old_sku:r.old_sku,new_sku:r.new_sku,artist_old:oldCode,artist_new:newCode,status:'pending',created_by:(window.daProfile&&window.daProfile.id)||null}; });
+      window.daSB.from('sku_renames').insert(rows).then(function(res){ if(res&&res.error) console.error('sku_renames insert',res.error); });
+    }
+  };
+  if(_aeState.id){
+    var upd={artist_code:newCode}; if(newName) upd.display_name=newName;
+    window.daSB.from('profiles').update(upd).eq('id',_aeState.id).then(function(res){ if(res&&res.error){ console.error(res.error); if(window.showToast)showToast('SKUs saved; profile update failed: '+(res.error.message||''),'error'); } finish(); });
+  } else { finish(); }
 };
 </script>
 </body>
