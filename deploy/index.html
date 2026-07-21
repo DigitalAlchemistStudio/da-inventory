@@ -1157,7 +1157,7 @@ function editItem(id){
   if(known){ sizeEl.value=it.size; sizeCustomEl.style.display='none'; }
   else{ sizeEl.value='__custom'; sizeCustomEl.style.display='block'; sizeCustomEl.value=it.size; }
   skuTouched=true; skuEl.value=it.sku;
-  var _gA=document.getElementById('gArtist'); if(_gA){ _gA.value = it.artistCode || ((it.sku||'').split('-')[0]) || ''; }
+  var _gA=document.getElementById('gArtist'); if(_gA){ _gA.value = it.artistCode || ((it.sku||'').split(/[-_]/)[0]) || ''; }
   setVendors(it.vendor);
   document.getElementById('cost').value=it.cost||'';
   document.getElementById('price').value=it.price||'';
@@ -1905,9 +1905,31 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
 </script>
 
 <script>
+/* ===== Artist code helpers (shared) =====
+   SKUs use mixed delimiters: dash (INK-ACC-…), underscore (PIC_PRI_…),
+   or none at all (Printful POD numbers like 3936917_14943 / 264134…).
+   Always derive the artist code from the FIRST token split on dash OR
+   underscore, so underscore SKUs fold into the right artist instead of
+   appearing as their own SKU-named bucket. */
+window.daArtistCodeOf=function(it){
+  var c=(it&&it.artistCode)||'';
+  if(!c){ c=(((it&&it.sku)||'').split(/[-_]/)[0])||''; }
+  return (c+'').trim().toUpperCase();
+};
+window.daKnownArtistCodes=function(){
+  var s={WEY:true,INK:true,PIC:true,COL:true,DA:true};
+  (window.daProfilesAll||[]).forEach(function(p){ if(p.artist_code) s[(p.artist_code+'').toUpperCase()]=true; });
+  try{ if(typeof BUILDER!=='undefined'&&BUILDER.artists) BUILDER.artists.forEach(function(a){ if(a&&a[1]) s[(a[1]+'').toUpperCase()]=true; }); }catch(e){}
+  return s;
+};
+window.daIsArtistCode=function(code){
+  if(!code) return false;
+  if(window.daKnownArtistCodes()[code]) return true;
+  return /^[A-Z]{2,4}$/.test(code);   /* short alpha token = plausible artist code; numeric POD SKUs fail this */
+};
 /* ===== Artist earnings: 40% of profit (price - cost) by default, per-artist ===== */
 function daShareFor(it){
-  var c=(it&&it.artistCode) || (((it&&it.sku)||'').split('-')[0]);
+  var c=window.daArtistCodeOf(it);
   if(window.daShareMap && window.daShareMap[c]!=null) return window.daShareMap[c];
   return (window.DA_SHARE!=null?window.DA_SHARE:0.40);
 }
@@ -1918,14 +1940,14 @@ window.daLoadProfiles=function(){
     if(r.error){ console.error(r.error); return; }
     window.daProfilesAll=r.data||[];
     window.daShareMap={};
-    window.daProfilesAll.forEach(function(p){ if(p.artist_code) window.daShareMap[p.artist_code]=(p.artist_share!=null?p.artist_share:0.40); });
+    window.daProfilesAll.forEach(function(p){ if(p.artist_code) window.daShareMap[(p.artist_code+'').toUpperCase()]=(p.artist_share!=null?p.artist_share:0.40); });
     if(window.daRenderRates) window.daRenderRates();
     if(window.daRenderArtists) window.daRenderArtists();
   });
 };
 window.daRenderRates=function(){
   var box=document.getElementById('artistRates'); if(!box) return;
-  var list=(window.daArtistBuckets?window.daArtistBuckets():(window.daProfilesAll||[]));
+  var list=(window.daArtistBuckets?window.daArtistBuckets():(window.daProfilesAll||[])).filter(function(p){ return !p.unassigned; });
   if(!list.length){ box.innerHTML='<div class="hint">No artists yet.</div>'; return; }
   box.innerHTML=list.map(function(p){
     var pct=Math.round((p.artist_share!=null?p.artist_share:0.40)*100);
@@ -1941,7 +1963,7 @@ window.daSaveRate=function(id,val){
   if(!window.daSB) return;
   window.daSB.from('profiles').update({artist_share:share}).eq('id',id).then(function(r){
     if(r.error){ alert('Could not save rate: '+(r.error.message||r.error)); return; }
-    (window.daProfilesAll||[]).forEach(function(p){ if(p.id===id){ p.artist_share=share; if(p.artist_code) window.daShareMap[p.artist_code]=share; } });
+    (window.daProfilesAll||[]).forEach(function(p){ if(p.id===id){ p.artist_share=share; if(p.artist_code) window.daShareMap[(p.artist_code+'').toUpperCase()]=share; } });
     if(window.DA_ARTIST && window.daShareMap[window.DA_ARTIST]!=null) window.DA_SHARE=window.daShareMap[window.DA_ARTIST];
     if(typeof render==='function') render();
     if(window.daRenderArtists) window.daRenderArtists(); if(window.daRenderRates) window.daRenderRates();
@@ -2337,14 +2359,16 @@ window.daArtistBuckets=function(){
   var NAMEMAP={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',COL:'Colab',DA:'Digital Alchemists'};
   var profs=(window.daProfilesAll||[]).filter(function(p){ return p.artist_code; }).slice();
   var have={}; profs.forEach(function(p){ have[(p.artist_code||'').toUpperCase()]=true; });
-  var seen={};
+  var seen={}, hasUnassigned=false;
   allItems.forEach(function(it){
-    var code=((it.artistCode||((it.sku||'').split('-')[0])||'')+'').toUpperCase();
-    if(!code||have[code]||seen[code]) return;
+    var code=window.daArtistCodeOf(it);
+    if(!code||!window.daIsArtistCode(code)){ hasUnassigned=true; return; }
+    if(have[code]||seen[code]) return;
     seen[code]=true;
     profs.push({id:null,artist_code:code,display_name:(NAMEMAP[code]||code),artist_share:0.40,email:'',noAccount:true});
   });
   profs.sort(function(a,b){ return (a.display_name||a.artist_code||'').localeCompare(b.display_name||b.artist_code||''); });
+  if(hasUnassigned){ profs.push({id:null,artist_code:'UNASSIGNED',display_name:'Unassigned / POD',artist_share:0,email:'',noAccount:true,unassigned:true}); }
   return profs;
 };
 window.daRenderArtists=function(){
@@ -2355,7 +2379,10 @@ window.daRenderArtists=function(){
   function money(n){ return '$'+(Number(n)||0).toFixed(2); }
   box.innerHTML=profs.map(function(p){
     var code=p.artist_code;
-    var mine=allItems.filter(function(it){ return ((it.artistCode||((it.sku||'').split('-')[0]))===code); });
+    var ucode=(code||'').toUpperCase();
+    var mine=p.unassigned
+      ? allItems.filter(function(it){ var c=window.daArtistCodeOf(it); return !c || !window.daIsArtistCode(c); })
+      : allItems.filter(function(it){ return window.daArtistCodeOf(it)===ucode; });
     var share=(p.artist_share!=null?p.artist_share:0.40);
     var apct=Math.round(share*100), dpct=100-apct;
     var rev=0, earn=0, profit=0, qty=0;
@@ -2382,9 +2409,11 @@ window.daRenderArtists=function(){
           +'<div><b>'+money(earn)+'</b><span>artist earns</span></div>'
           +'<div><b>'+money(daEarn)+'</b><span>DA earns</span></div>'
         +'</div>'
-        +'<div class="a-cut"><b>Cut:</b> <input type="number" min="0" max="100" step="1" value="'+apct+'" '+(p.noAccount?'disabled title="Set once this artist has an account"':'onchange="daSaveRate(\''+p.id+'\',this.value)"')+'> % artist &nbsp;/&nbsp; <span style="color:var(--accent2)">'+dpct+'%</span> Digital Alchemists'+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--muted)">default 40% until account created</span>':(p.email?(' &nbsp;·&nbsp; <span style="color:var(--muted)">'+esc(p.email)+'</span>'):''))+'</div>'
+        +(p.unassigned
+          ? '<div class="a-cut" style="color:var(--muted)">POD / dropship &amp; unassigned SKUs — no artist, so no profit split. Give a product an artist code to move it into that artist’s card.</div>'
+          : '<div class="a-cut"><b>Cut:</b> <input type="number" min="0" max="100" step="1" value="'+apct+'" '+(p.noAccount?'disabled title="Set once this artist has an account"':'onchange="daSaveRate(\''+p.id+'\',this.value)"')+'> % artist &nbsp;/&nbsp; <span style="color:var(--accent2)">'+dpct+'%</span> Digital Alchemists'+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--muted)">default 40% until account created</span>':(p.email?(' &nbsp;·&nbsp; <span style="color:var(--muted)">'+esc(p.email)+'</span>'):''))+'</div>')
         +table
-        +(typeof daArtistDocsHtml==='function'?daArtistDocsHtml(code):'')
+        +((!p.unassigned && typeof daArtistDocsHtml==='function')?daArtistDocsHtml(code):'')
       +'</div>'
     +'</details>';
   }).join('');
