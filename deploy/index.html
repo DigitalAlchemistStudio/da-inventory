@@ -296,6 +296,7 @@
   .docs-banner.warn{background:rgba(224,166,60,.14);color:var(--warn);}
   .doc-yes{color:var(--good);font-weight:800;}
   .doc-no{color:var(--muted);}
+  .ds-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.3px;color:var(--accent2);border:1px solid var(--accent2);border-radius:6px;padding:1px 5px;margin-left:6px;vertical-align:middle;text-transform:uppercase;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -2441,9 +2442,10 @@ window.daArtistDocsHtml=function(code){
     var r=daDocRow(code,dd.key)||{};
     function chk(field,label){ return '<label class="doc-chk"><input type="checkbox" '+(r[field]?'checked':'')+' onchange="daDocSet(\''+code+'\',\''+dd.key+'\',\''+field+'\',this.checked)"> '+label+'</label>'; }
     var file = r.file_path ? '<a href="#" onclick="daDocDownload(\''+code+'\',\''+dd.key+'\');return false;">view</a>' : '<span style="color:var(--muted)">—</span>';
+    var dsb=(r.source==='docusign')?' <span class="ds-badge">DocuSign</span>':'';
     return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td>'
       +'<td>'+chk('artist_signed','')+'</td><td>'+chk('company_signed','')+'</td><td>'+chk('verified','')+'</td>'
-      +'<td>'+file+'</td>'
+      +'<td>'+file+dsb+'</td>'
       +'<td><label class="doc-up">Upload<input type="file" accept="application/pdf,image/*" style="display:none" onchange="daDocUpload(\''+code+'\',\''+dd.key+'\',this.files[0])"></label></td></tr>';
   }).join('');
   var pend=daDocsPending(code);
@@ -2464,7 +2466,8 @@ window.daRenderMyDocs=function(){
     var r=daDocRow(code,dd.key)||{};
     function dot(v){ return v?'<span class="doc-yes">✓</span>':'<span class="doc-no">—</span>'; }
     var file = r.file_path ? '<a href="#" onclick="daDocDownload(\''+code+'\',\''+dd.key+'\');return false;">View signed copy</a>' : '<span style="color:var(--muted)">Not uploaded yet</span>';
-    return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+dot(r.artist_signed)+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+'</td></tr>';
+    var dsb=(r.source==='docusign')?' <span class="ds-badge">DocuSign</span>':'';
+    return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+dot(r.artist_signed)+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+dsb+'</td></tr>';
   }).join('');
   box.innerHTML=banner+'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Document</th><th>You signed</th><th>Company signed</th><th>Verified</th><th style="text-align:left;">File</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 };
