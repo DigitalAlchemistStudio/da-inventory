@@ -390,6 +390,77 @@
   .mf-dot.on{background:var(--da-st-src);border-color:var(--da-st-src);}
   .mf-dot.na{border-style:dashed;opacity:.5;}
   .mf-lock{color:var(--da-danger-text);font-size:11px;font-weight:700;margin-left:6px;}
+
+  /* ---- Design detail ---- */
+  .dt-back{
+    display:inline-flex;align-items:center;gap:4px;min-height:44px;
+    background:none;border:none;cursor:pointer;padding:0 8px 0 0;
+    color:var(--da-accent);font:600 13px/1 var(--da-font-ui);
+  }
+  .dt-back svg{width:18px;height:18px;}
+  .dt-hero{
+    aspect-ratio:16/9;border-radius:var(--da-r-card);margin-bottom:var(--da-s-7);
+    border:1px dashed var(--da-line);background:var(--da-surface-2);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    color:var(--da-muted);font-size:12px;text-align:center;padding:var(--da-s-7);
+  }
+  .dt-hero img{width:100%;height:100%;object-fit:cover;}
+  .dt-chips{display:flex;flex-wrap:wrap;gap:var(--da-s-2);margin:var(--da-s-5) 0 var(--da-s-7);}
+  .dt-chip{
+    font:600 11px/1 var(--da-font-ui);padding:5px 9px;border-radius:var(--da-r-chip);
+    background:var(--da-chip);color:var(--da-code-fg);
+  }
+  .dt-chip.artist{background:color-mix(in srgb, var(--da-artist) 15%, transparent);color:var(--da-artist);}
+  .dt-sec{margin:var(--da-s-10) 0;}
+  .dt-sec > .da-kicker{margin-bottom:var(--da-s-5);}
+
+  /* Pipeline: Ingested -> Source -> Print-ready -> Mockups -> Rights -> Live */
+  .dt-pipe{display:flex;gap:var(--da-s-2);}
+  .dt-step{flex:1;min-width:0;text-align:center;}
+  .dt-step .bar{height:4px;border-radius:2px;background:var(--da-line);margin-bottom:6px;}
+  .dt-step.done .bar{background:var(--da-st-live);}
+  .dt-step.blocked .bar{background:var(--da-danger);}
+  .dt-step.na .bar{background:repeating-linear-gradient(90deg,var(--da-line) 0 4px,transparent 4px 8px);}
+  .dt-step span{font-size:9.5px;line-height:1.25;color:var(--da-muted);display:block;
+    word-break:break-word;}
+  .dt-step.done span{color:var(--da-ink);}
+
+  /* Files on disk. These read the uploads; they are not editable flags —
+     the products table has no manifest-flag columns. */
+  .dt-file{
+    display:flex;align-items:center;gap:var(--da-s-5);padding:var(--da-s-5) var(--da-s-6);
+    border:1px solid var(--da-line);border-radius:var(--da-r-card);margin-bottom:var(--da-s-3);
+    background:var(--da-surface);
+  }
+  .dt-file__body{flex:1;min-width:0;}
+  .dt-file__body b{display:block;font-size:13px;font-weight:600;}
+  .dt-file__body code{
+    display:block;margin-top:4px;font:400 10.5px/1.4 var(--da-font-mono);
+    color:var(--da-code-fg);word-break:break-all;
+  }
+  .dt-state{
+    flex:none;font:700 9px/1 var(--da-font-mono);letter-spacing:.07em;
+    padding:4px 7px;border-radius:var(--da-r-pill);
+    background:color-mix(in srgb, var(--st) 15%, transparent);color:var(--st);
+    --st:var(--da-st-hold);
+  }
+  .dt-state.on{--st:var(--da-st-live);}
+  .dt-state.na{--st:var(--da-st-wip);}
+  .dt-path{
+    font:400 11px/1.5 var(--da-font-mono);color:var(--da-muted);
+    background:var(--da-surface-2);border-radius:var(--da-r-chip);
+    padding:var(--da-s-4) var(--da-s-5);word-break:break-all;
+  }
+  .dt-actions{display:flex;gap:var(--da-s-4);flex-wrap:wrap;margin:var(--da-s-10) 0;}
+  .dt-actions > *{flex:1 1 180px;}
+  .dt-var{width:100%;}
+  .dt-var td{padding:9px 12px;border-top:1px solid var(--da-line);font-size:12.5px;text-align:left;}
+  .dt-var tbody tr:nth-child(even){background:var(--da-surface-2);}
+  .dt-wrap{border:1px solid var(--da-line);border-radius:var(--da-r-card);}
+  .dt-wrap .tablewrap{overflow-x:auto;border-radius:var(--da-r-card);}
+  /* wider than the phone, so it scrolls inside its own box rather than
+     clipping the trailing columns */
+  .dt-wrap table{width:max-content;min-width:100%;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
   .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
   .stat .n{font-size:24px;font-weight:700;}
@@ -945,6 +1016,23 @@
     </div>
     <div id="codexTables"></div>
   </div><!-- /tab-codex -->
+
+  <!-- ===== Design — one design, its files, variants and actions ===== -->
+  <div id="tab-detail" class="tabpanel">
+    <button class="dt-back" onclick="switchTab('manifest')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      Manifest
+    </button>
+    <div id="dtBody"></div>
+  </div><!-- /tab-detail -->
+
+  <!-- Push to Shopify: every variant SKU that will be created -->
+  <div class="dasheet-scrim" id="dtPushScrim" onclick="daClosePush()" hidden></div>
+  <div class="dasheet" id="dtPushSheet" role="dialog" aria-label="Push to Shopify" hidden>
+    <div class="dasheet__grab"></div>
+    <div id="dtPushBody"></div>
+  </div>
 
   <!-- ===== Manifest — search / filter / scan the whole catalogue ===== -->
   <div id="tab-manifest" class="tabpanel">
@@ -2662,6 +2750,7 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
     if(name==='vault' && window.daRenderVault){ window.daRenderVault(); }
     if(name==='gate' && window.daRenderGate){ window.daRenderGate(); }
     if(name==='codex' && window.daRenderCodex){ window.daRenderCodex(); }
+    if(name==='detail' && window.daRenderDetail){ window.daRenderDetail(); }
     window.scrollTo(0,0);
   }
 
@@ -2676,7 +2765,11 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
     if(btn) btn.setAttribute('aria-expanded', open?'true':'false');
   }
   window.daToggleMore = daToggleMore;
-  document.addEventListener('keydown',function(e){ if(e.key==='Escape') daToggleMore(false); });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape') return;
+    daToggleMore(false);
+    if(window.daClosePush) window.daClosePush();
+  });
   function tdl(id,ext){
     var url=id+"."+ext;
     fetch(url,{method:"HEAD"}).then(function(r){
@@ -3499,13 +3592,179 @@ window.daRenderAllArtistDocs=function(){
     setSearch('');
   };
 
-  /* Open a design: filter both the design list and the variant table to it,
-     so the master list below shows exactly that design's variants. */
+  /* Open one design. Sub-screens push with a back chevron; the variant
+     table below the Manifest is filtered to the same design so the two
+     views agree. */
   window.daOpenDesign = function(baseSku){
-    window.daStageFilter = null;
-    window.daManifestFilter = 'all';
-    switchTab('manifest');
+    window.daCurrentDesign = baseSku;
     setSearch(baseSku);
+    switchTab('detail');
+    daRenderDetail();
+  };
+
+  function designBy(baseSku){
+    return designs().filter(function(d){ return d.baseSku===baseSku; })[0] || null;
+  }
+
+  /* File naming is never typed by a human — these are the patterns from
+     DATA-MODEL.md, filled in from the base SKU. */
+  function fileNames(d){
+    var v = (d.vendor || (d.items[0]||{}).vendor || 'vendor').replace(/[^A-Za-z0-9]+/g,'');
+    return {
+      source: d.baseSku + '__source.psd',
+      print:  d.baseSku + '__print__' + v + '.pdf',
+      mockup: d.baseSku + '__mockup__01.png'
+    };
+  }
+
+  window.daRenderDetail = function(){
+    var box = document.getElementById('dtBody'); if(!box) return;
+    var d = designBy(window.daCurrentDesign);
+    if(!d){
+      box.innerHTML = '<div class="da-empty"><b>That design is gone</b>'
+        + 'It may have been deleted. Head back to the Manifest.</div>';
+      return;
+    }
+
+    var locked  = !window.daCanList(d.artist);
+    var hasSrc  = d.items.some(function(i){ return i.hasImg || i.imgUrl; });
+    var hasMok  = d.items.some(function(i){ return i.mockupUrl; });
+    var isLive  = d.stage === 'LIVE';
+    var rdy     = d.stage === 'RDY' || isLive;
+    var names   = fileNames(d);
+    var hero    = (d.items.filter(function(i){ return i.mockupUrl || i.imgUrl || i.thumb; })[0]) || {};
+    var heroSrc = hero.mockupUrl || hero.imgUrl || hero.thumb || '';
+
+    /* Ingested -> Source -> Print-ready -> Mockups -> Rights -> Live.
+       Print-ready has no column in the products table, so it renders as
+       "not tracked" rather than as done or missing. */
+    var steps = [
+      {label:'Ingested',    cls:'done'},
+      {label:'Source',      cls:hasSrc?'done':''},
+      {label:'Print-ready', cls:'na'},
+      {label:'Mockups',     cls:hasMok?'done':''},
+      {label:'Rights',      cls:locked?'blocked':'done'},
+      {label:'Live',        cls:isLive?'done':''}
+    ];
+
+    var vendor = d.vendor || (d.items[0]||{}).vendor || '';
+    var coll   = d.collection || '';
+
+    box.innerHTML =
+        '<div class="dt-hero">'
+      + (heroSrc ? '<img src="'+esc(heroSrc)+'" alt="">'
+                 : 'No mockup yet — shoot one and drop it in as<br>'+esc(names.mockup))
+      + '</div>'
+
+      + '<h2 class="da-title" style="font-size:clamp(21px,5vw,28px);">'+esc(d.title||d.baseSku)+'</h2>'
+      + '<div style="margin-top:var(--da-s-5);"><span class="da-sku">'+esc(d.baseSku)+'</span></div>'
+
+      + '<div class="dt-chips da-a-'+esc(d.artist)+'">'
+      + '<span class="dt-chip artist">'+esc(artistName(d.artist))+'</span>'
+      + (coll   ? '<span class="dt-chip">'+esc(coll)+'</span>' : '')
+      + (vendor ? '<span class="dt-chip">'+esc(vendor)+'</span>' : '')
+      + '<span class="dt-chip">'+esc(stageMeta(d.stage).label)+'</span>'
+      + '</div>'
+
+      + (locked
+          ? '<div class="gate-alert" style="cursor:pointer;" onclick="switchTab(\'gate\')">'
+            + '<span class="gate-alert__ico">🔒</span><span><b>Blocked by the Gate</b>'
+            + '<i>'+esc(artistName(d.artist))+' is missing '
+            + window.daGateMissing(d.artist).map(function(x){ return x.label; }).join(' and ')
+            + '. This design cannot go live until it is signed and verified.</i></span></div>'
+          : '<div class="gate-alert clear"><span class="gate-alert__ico">✓</span>'
+            + '<span><b>Rights on file</b><i>Paperwork is signed and verified.</i></span></div>')
+
+      + '<div class="dt-sec"><div class="da-kicker">Pipeline</div>'
+      + '<div class="dt-pipe">'
+      + steps.map(function(st){
+          return '<div class="dt-step '+st.cls+'"><div class="bar"></div><span>'+esc(st.label)+'</span></div>';
+        }).join('')
+      + '</div></div>'
+
+      + '<div class="dt-sec"><div class="da-kicker">Files on disk</div>'
+      + fileRow('Source master',   names.source, hasSrc ? 'on' : '')
+      + fileRow('Print-ready',     names.print,  'na')
+      + fileRow('Store mockups',   names.mockup, hasMok ? 'on' : '')
+      + '<div class="hint" style="margin-top:var(--da-s-4);">'
+      + 'Source and mockups follow the uploads on each variant. Print-ready has no column '
+      + 'in the products table yet, so it is shown as not tracked rather than guessed at.'
+      + '</div></div>'
+
+      + '<div class="dt-sec"><div class="da-kicker">Folder</div>'
+      + '<div class="dt-path">04 — Design Drop/'+esc(d.artist)+' — …/'+esc(d.baseSku)+'/</div></div>'
+
+      + '<div class="dt-sec"><div class="da-kicker">Variants '
+      + '<span class="codex-count">'+d.items.length+'</span></div>'
+      + '<div class="dt-wrap"><div class="tablewrap"><table class="da-table dt-var"><thead><tr>'
+      + '<th>Variant SKU</th><th>Size</th><th>Finish</th><th>Stock</th><th>Price</th>'
+      + '</tr></thead><tbody>'
+      + d.items.map(function(i){
+          return '<tr><td><span class="da-sku">'+esc(i.sku)+'</span></td>'
+            + '<td>'+esc(i.size||'—')+'</td><td>'+esc(i.finish||'—')+'</td>'
+            + '<td>'+(parseInt(i.qty)||0)+'</td><td>'+money(i.price)+'</td></tr>';
+        }).join('')
+      + '</tbody></table></div></div></div>'
+
+      + '<div class="dt-actions">'
+      + (locked
+          ? '<button class="btn-grad" disabled title="Blocked by the Gate">Blocked by the Gate</button>'
+          : '<button class="btn-grad" onclick="daOpenPush()">Push to Shopify</button>')
+      + '<button class="btn ghost" onclick="daEditFirstVariant()">Edit in master list</button>'
+      + '</div>';
+
+    function fileRow(label, name, state){
+      var txt = state==='on' ? 'ON DISK' : (state==='na' ? 'NOT TRACKED' : 'MISSING');
+      return '<div class="dt-file"><div class="dt-file__body"><b>'+esc(label)+'</b>'
+           + '<code>'+esc(name)+'</code></div>'
+           + '<span class="dt-state '+state+'">'+txt+'</span></div>';
+    }
+  };
+
+  window.daEditFirstVariant = function(){
+    var d = designBy(window.daCurrentDesign);
+    if(d && d.items[0] && typeof editItem==='function'){
+      switchTab('manifest');
+      editItem(d.items[0].id);
+    } else { switchTab('manifest'); }
+  };
+
+  /* ---- Push to Shopify ------------------------------------------------- */
+  window.daOpenPush = function(){
+    var d = designBy(window.daCurrentDesign); if(!d) return;
+    if(!window.daCanList(d.artist)) return;      /* the gate is a hard stop */
+    var body = document.getElementById('dtPushBody');
+    var vendor = d.vendor || (d.items[0]||{}).vendor || '—';
+    body.innerHTML =
+        '<div style="padding:0 var(--da-s-7);">'
+      + '<div class="da-kicker">Go live</div>'
+      + '<h3 class="da-title" style="font-size:22px;margin-top:var(--da-s-2);">Push to Shopify</h3>'
+      + '<div class="da-kicker" style="margin:var(--da-s-9) 0 var(--da-s-4);">'
+      + d.items.length+' variant'+(d.items.length===1?'':'s')+' will be created</div>'
+      + '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:5px;'
+      + 'max-height:34vh;overflow-y:auto;">'
+      + d.items.map(function(i){ return '<span class="da-sku">'+esc(i.sku)+'</span>'; }).join('')
+      + '</div>'
+      + '<div class="da-callout" style="margin:var(--da-s-7) 0;">'
+      + 'Print file goes to <b>'+esc(vendor)+'</b> as <code>'+esc(fileNames(d).print)+'</code>. '
+      + 'Rights are signed and verified.</div>'
+      + '<div class="dt-actions">'
+      + '<button class="btn-grad" onclick="daConfirmPush()">Create '+d.items.length+' variant'
+      + (d.items.length===1?'':'s')+'</button>'
+      + '<button class="btn ghost" onclick="daClosePush()">Not yet</button>'
+      + '</div></div>';
+    document.getElementById('dtPushSheet').hidden = false;
+    document.getElementById('dtPushScrim').hidden = false;
+  };
+  window.daClosePush = function(){
+    var a=document.getElementById('dtPushSheet'), b=document.getElementById('dtPushScrim');
+    if(a) a.hidden = true; if(b) b.hidden = true;
+  };
+  /* The existing export is the real path to Shopify; this hands off to it. */
+  window.daConfirmPush = function(){
+    daClosePush();
+    if(typeof exportShopify==='function') exportShopify();
+    else (window.showToast||window.alert)('Shopify export is not available.');
   };
 
   function setSearch(v){
