@@ -2,25 +2,394 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#04101f">
 <title>Digital Alchemists — Product Manager</title>
+<script>
+  /* Applied before first paint so night mode never flashes white.
+     The switch itself lives in the Codex screen. */
+  (function(){
+    try{
+      var t = localStorage.getItem('da_theme');
+      if(!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    }catch(e){ document.documentElement.setAttribute('data-theme','light'); }
+  })();
+</script>
 <style>
+  /* ============================================================
+     Digital Alchemists — shared design tokens
+     One source of truth for the web portal AND the mobile apps.
+     Derived from the Design & Artist Intake handbook pages, so every
+     surface matches the printed kit. Mirror these into the native
+     theme object; do not fork the values.
+     ============================================================ */
   :root{
-    --navy:#0C3482; --accent:#07A5C0; --accent2:#47C5D5; --cyan:#91EBEE;
-    --blue:#0360AE; --light:#DCEEFA;
-    --bg:#0A1730; --panel:#102647; --panel2:#16305A; --text:#E7F2FB; --muted:#8AA6CC;
-    --good:#3FB98C; --warn:#E0A63C; --bad:#E05C5C; --border:#1E3E6E;
+    /* surfaces + text (day) */
+    --da-bg:#f5fafc;
+    --da-surface:#ffffff;
+    --da-surface-2:#eef8fc;
+    --da-ink:#0c2233;
+    --da-muted:#5a7183;
+    --da-line:#d9e7ef;
+    --da-chip:#e4f4fa;
+
+    /* brand */
+    --da-cyan-light:#93EBEE;
+    --da-cyan:#56CCDA;
+    --da-teal:#0E95BF;
+    --da-blue:#046BB5;
+    --da-navy:#043C8C;
+    --da-night-1:#04101f;
+    --da-night-2:#0a2c46;
+    --da-accent:var(--da-teal);
+    --da-title:var(--da-navy);
+    --da-kick:var(--da-blue);
+    --da-grad:linear-gradient(135deg,#0E95BF 0%,#046BB5 55%,#043C8C 100%);
+    --da-night:linear-gradient(120deg,#04101f,#0a2c46);
+
+    /* SKU / code chip (handbook <code>) */
+    --da-code-bg:#e4f4fa; --da-code-fg:#065a86; --da-code-border:#cbeaf5;
+    /* callout (handbook blockquote) */
+    --da-quote-bg:#e9f7fc; --da-quote-fg:#0d4f6b; --da-quote-rule:var(--da-cyan);
+    /* table header (handbook th) */
+    --da-thead-bg:#046BB5; --da-thead-fg:#ffffff;
+
+    /* semantic */
+    --da-danger:#E2564D; --da-danger-text:#C13F37;
+    --da-warning:#E8A33D; --da-success:#2FB37A;
+
+    /* pipeline status (day) */
+    --da-st-wip:#7C8FA3; --da-st-src:#0E95BF; --da-st-prt:#046BB5; --da-st-mok:#56CCDA;
+    --da-st-rdy:#E8A33D; --da-st-live:#2FB37A; --da-st-hold:#8A93A3;
+
+    /* artist identity (day) */
+    --da-artist-wey:#046BB5; --da-artist-pic:#0E95BF; --da-artist-ink:#E2564D;
+    --da-artist-col:#043C8C; --da-artist-da:#0a2c46;
+
+    /* type */
+    --da-font-display:'DA Display',cursive;
+    --da-font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+    --da-font-mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+
+    /* radius */
+    --da-r-pill:5px; --da-r-chip:9px; --da-r-control:13px;
+    --da-r-card:16px; --da-r-card-lg:18px; --da-r-sheet:26px;
+
+    /* space scale */
+    --da-s-1:4px; --da-s-2:6px; --da-s-3:8px; --da-s-4:10px;
+    --da-s-5:12px; --da-s-6:14px; --da-s-7:16px; --da-s-8:18px;
+    --da-s-9:22px; --da-s-10:26px; --da-s-11:34px;
+
+    /* elevation — cards use a 1px line OR a shadow, never both */
+    --da-shadow-sheet:0 -14px 44px rgba(4,16,31,.40);
+    --da-shadow-raised:0 8px 24px rgba(4,60,140,.35);
+
+    /* filled controls. --da-accent is the interactive *ink* colour; a filled
+       control needs a background dark enough to carry white text, hence a
+       separate pair. Primary CTAs use --da-grad + #fff, per the handoff. */
+    --da-fill:var(--da-blue);
+    --da-on-fill:#ffffff;
+    --da-on-success:#ffffff;
+
+    /* ---- legacy aliases: the pre-existing app reads these ----
+       Mapped onto the tokens above so one palette drives everything. */
+    --navy:var(--da-navy); --accent:var(--da-teal); --accent2:var(--da-blue);
+    --cyan:var(--da-cyan); --blue:var(--da-blue); --light:var(--da-surface-2);
+    --bg:var(--da-bg); --panel:var(--da-surface); --panel2:var(--da-surface-2);
+    --text:var(--da-ink); --muted:var(--da-muted); --border:var(--da-line);
+    --good:var(--da-success); --warn:var(--da-warning); --bad:var(--da-danger);
   }
+
+  /* Night mode. data-theme="dark" on <html>. */
+  [data-theme="dark"]{
+    --da-bg:#04101f;
+    --da-surface:#0a2237;
+    --da-surface-2:#0d2b44;
+    --da-ink:#eafbff;
+    --da-muted:#7fa8c0;
+    --da-line:#17405c;
+    --da-chip:#0e3350;
+    --da-accent:var(--da-cyan);
+    --da-title:var(--da-cyan-light);
+    --da-kick:#7fc7e8;
+    --da-code-bg:#0e3350; --da-code-fg:#93EBEE; --da-code-border:#1b5273;
+    --da-quote-bg:#0b2b42; --da-quote-fg:#aee9ff;
+    --da-thead-bg:#0a3350;
+    --da-danger-text:#FF8A7E; --da-success:#4FCB93;
+    --da-st-wip:#9FB6C8; --da-st-src:#56CCDA; --da-st-prt:#5AB6EE; --da-st-mok:#93EBEE;
+    --da-st-rdy:#F2BB63; --da-st-live:#4FCB93; --da-st-hold:#A7B2C0;
+    --da-artist-wey:#5AB6EE; --da-artist-pic:#56CCDA; --da-artist-ink:#FF8A7E;
+    --da-artist-col:#8FB4F0; --da-artist-da:#93EBEE;
+    /* legacy aliases follow the tokens automatically, except these two
+       which point at different tokens in night mode */
+    --accent2:var(--da-cyan); --accent:var(--da-cyan);
+    /* cyan is light — filled controls flip to dark ink in night mode */
+    --da-fill:var(--da-cyan);
+    --da-on-fill:#04101f;
+    --da-on-success:#052117;
+  }
+
+  @font-face{
+    font-family:'DA Display';
+    src:url(assets/da-display.woff2) format('woff2');
+    font-weight:400;
+    font-display:swap;
+  }
+
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:linear-gradient(165deg,#0A1730 0%,#0C2350 55%,#0C3482 130%);color:var(--text);min-height:100vh;}
-  header{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
-    background:linear-gradient(90deg,rgba(12,52,130,.35),rgba(7,165,192,.08));}
+  body{margin:0;font-family:var(--da-font-ui);
+    background:var(--da-bg);color:var(--da-ink);min-height:100vh;
+    -webkit-text-size-adjust:100%;}
+  header{padding:20px 28px;border-bottom:3px solid var(--da-cyan);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;
+    background:var(--da-night);color:#eafbff;}
   .brand{display:flex;align-items:center;gap:16px;}
   .brand img{height:52px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));}
-  h1{margin:0;font-size:22px;letter-spacing:.3px;color:var(--cyan);}
+  h1{margin:0;font-size:22px;letter-spacing:.3px;color:var(--da-cyan-light);}
   .sub{color:var(--muted);font-size:13px;margin-top:3px;}
+  header .sub{color:#9ec9e4;}
   .wrap{padding:22px 28px;max-width:1600px;margin:0 auto;}
+
+  /* ============================================================
+     The five components that must be identical on web and mobile.
+     Spec: tokens.css in the design handoff. Do not restyle these
+     per-screen — every surface renders them the same way.
+     ============================================================ */
+
+  /* 1. SKU chip — every SKU, everywhere, is monospace in a tinted chip.
+        Never bare text. */
+  .da-sku{
+    font:400 11px/1.4 var(--da-font-mono);
+    color:var(--da-code-fg);
+    background:var(--da-code-bg);
+    border:1px solid var(--da-code-border);
+    border-radius:var(--da-r-pill);
+    padding:2px 5px;
+    display:inline-block;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+
+  /* 2. Status pill — the 3-4 letter code, at 15% tint on its own colour.
+        Long labels only where there is room. */
+  .da-status{
+    font:700 9px/1 var(--da-font-mono);
+    letter-spacing:.07em;
+    padding:3px 6px;
+    border-radius:var(--da-r-pill);
+    display:inline-block;
+    background:color-mix(in srgb, var(--st) 15%, transparent);
+    color:var(--st);
+    --st:var(--da-st-wip);
+  }
+  .da-status[data-st="WIP"]{--st:var(--da-st-wip);}
+  .da-status[data-st="SRC"]{--st:var(--da-st-src);}
+  .da-status[data-st="PRT"]{--st:var(--da-st-prt);}
+  .da-status[data-st="MOK"]{--st:var(--da-st-mok);}
+  .da-status[data-st="RDY"]{--st:var(--da-st-rdy);}
+  .da-status[data-st="LIVE"]{--st:var(--da-st-live);}
+  .da-status[data-st="HLD"]{--st:var(--da-st-hold);}
+  .da-status[data-st="ARC"]{--st:var(--da-st-hold);}
+
+  /* 3. Section kicker — the handbook's h4 */
+  .da-kicker{
+    font:600 11px/1 var(--da-font-ui);
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--da-kick);
+  }
+
+  /* 4. Page/screen title — display face over a 4px gradient rule
+        (the handbook's h1::after) */
+  .da-title{
+    font:400 clamp(24px,4vw,34px)/1.05 var(--da-font-display);
+    color:var(--da-title);
+    margin:0;
+  }
+  .da-title::after{
+    content:"";display:block;height:4px;border-radius:3px;
+    background:var(--da-grad);margin-top:7px;
+  }
+
+  /* 5. Callout — the handbook's blockquote */
+  .da-callout{
+    font:400 12px/1.55 var(--da-font-ui);
+    color:var(--da-quote-fg);
+    background:var(--da-quote-bg);
+    border-left:4px solid var(--da-quote-rule);
+    border-radius:0 10px 10px 0;
+    padding:11px 13px;
+  }
+
+  /* Card: a 1px line OR a shadow — never both on the same card. */
+  .da-card{
+    background:var(--da-surface);
+    border:1px solid var(--da-line);
+    border-radius:var(--da-r-card);
+  }
+
+  /* Table header (web portal tables) */
+  .da-table{width:100%;border-collapse:collapse;}
+  .da-table thead th{
+    background:var(--da-thead-bg);
+    color:var(--da-thead-fg);
+    font:600 9px/1 var(--da-font-mono);
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    text-align:left;
+    padding:8px 14px;
+  }
+
+  /* App chrome — the handbook's navy banner, used as top bar and tab bar */
+  .da-chrome{background:var(--da-night);border-bottom:3px solid var(--da-cyan);}
+  .da-chrome__kick{
+    font:700 8px/1 var(--da-font-mono);letter-spacing:.22em;
+    text-transform:uppercase;color:var(--da-cyan-light);
+  }
+
+  /* Artist identity colour — consistent on every surface */
+  .da-a-WEY{--da-artist:var(--da-artist-wey);}
+  .da-a-PIC{--da-artist:var(--da-artist-pic);}
+  .da-a-INK{--da-artist:var(--da-artist-ink);}
+  .da-a-COL{--da-artist:var(--da-artist-col);}
+  .da-a-DA{--da-artist:var(--da-artist-da);}
+  [class*="da-a-"]{--da-artist:var(--da-artist-da);}
+
+  /* Primary call to action — the gradient with white text, per the handoff. */
+  .btn-grad{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    min-height:44px;padding:12px 18px;border:none;cursor:pointer;
+    border-radius:var(--da-r-control);
+    background:var(--da-grad);color:#fff;
+    font:700 13.5px/1 var(--da-font-ui);
+  }
+  .btn-grad:disabled{opacity:.45;cursor:default;}
+
+  /* ---- The Vault ---- */
+  .vault-head{margin:var(--da-s-3) 0 var(--da-s-9);}
+  .vault-head .da-kicker{margin-bottom:var(--da-s-2);}
+  .vault-sec{margin:var(--da-s-10) 0;}
+  .vault-sec > .da-kicker{margin-bottom:var(--da-s-5);}
+  .vault-actions{display:flex;gap:var(--da-s-4);flex-wrap:wrap;margin:var(--da-s-10) 0;}
+  .vault-actions > *{flex:1 1 190px;}
+
+  /* Gate alert: red when something is blocked, green when it is clear. */
+  .gate-alert{
+    display:flex;align-items:center;gap:var(--da-s-6);
+    padding:var(--da-s-7);border-radius:var(--da-r-card);
+    background:color-mix(in srgb, var(--da-danger) 12%, var(--da-surface));
+    border:1px solid color-mix(in srgb, var(--da-danger) 40%, transparent);
+    color:var(--da-danger-text);width:100%;text-align:left;cursor:pointer;
+    font-family:var(--da-font-ui);
+  }
+  .gate-alert b{display:block;font-size:15px;margin-bottom:3px;}
+  .gate-alert i{font-style:normal;font-size:12.5px;line-height:1.5;opacity:.9;}
+  .gate-alert .gate-alert__ico{font-size:22px;flex:none;}
+  .gate-alert.clear{
+    background:color-mix(in srgb, var(--da-success) 12%, var(--da-surface));
+    border-color:color-mix(in srgb, var(--da-success) 40%, transparent);
+    color:var(--da-success);cursor:default;
+  }
+
+  /* The line — one chip per status, tap to filter the Manifest. */
+  .line-chips{display:flex;gap:var(--da-s-3);overflow-x:auto;padding-bottom:var(--da-s-2);
+    scrollbar-width:none;}
+  .line-chips::-webkit-scrollbar{display:none;}
+  .line-chip{
+    flex:0 0 auto;min-height:44px;padding:8px var(--da-s-6);cursor:pointer;
+    background:var(--da-surface);border:1px solid var(--da-line);
+    border-radius:var(--da-r-chip);text-align:left;font-family:var(--da-font-ui);
+    display:flex;flex-direction:column;justify-content:center;gap:2px;
+  }
+  .line-chip .n{font:700 17px/1 var(--da-font-ui);color:var(--st,var(--da-ink));}
+  .line-chip .l{font-size:11px;color:var(--da-muted);white-space:nowrap;}
+
+  /* A row that points at one design or artist. */
+  .da-row{
+    display:flex;align-items:center;gap:var(--da-s-5);width:100%;text-align:left;
+    min-height:44px;padding:var(--da-s-5) var(--da-s-6);cursor:pointer;
+    background:var(--da-surface);border:1px solid var(--da-line);
+    border-radius:var(--da-r-card);margin-bottom:var(--da-s-3);
+    font-family:var(--da-font-ui);color:var(--da-ink);
+  }
+  .da-row:hover{background:var(--da-surface-2);}
+  .da-row__tint{flex:none;width:4px;align-self:stretch;border-radius:2px;background:var(--da-artist,var(--da-muted));}
+  .da-row__body{flex:1;min-width:0;}
+  .da-row__body b{display:block;font-size:13.5px;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .da-row__body i{display:block;font-style:normal;font-size:11.5px;color:var(--da-muted);margin-top:3px;}
+  .da-row__end{flex:none;text-align:right;font-size:12px;color:var(--da-muted);}
+  .da-row__end .amt{font:700 14px/1 var(--da-font-ui);color:var(--da-ink);display:block;margin-bottom:3px;}
+
+  /* Every list has an empty state, and each says what to do next. */
+  .da-empty{
+    padding:var(--da-s-9) var(--da-s-7);text-align:center;
+    border:1px dashed var(--da-line);border-radius:var(--da-r-card);
+    color:var(--da-muted);font-size:13px;line-height:1.6;background:var(--da-surface);
+  }
+  .da-empty b{display:block;color:var(--da-ink);font-size:14px;margin-bottom:5px;}
+
+  /* ---- Codex ---- */
+  .codex-theme{display:flex;align-items:center;justify-content:space-between;gap:var(--da-s-6);
+    padding:var(--da-s-7);}
+  .codex-theme b{font-size:14px;}
+  .daswitch{
+    flex:none;width:46px;height:28px;border-radius:14px;cursor:pointer;padding:0;
+    background:var(--da-line);border:none;position:relative;transition:background 180ms ease;
+  }
+  .daswitch span{
+    position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;
+    background:var(--da-surface);box-shadow:0 1px 3px rgba(4,16,31,.3);
+    transition:transform 180ms ease;
+  }
+  .daswitch[aria-checked="true"]{background:var(--da-accent);}
+  .daswitch[aria-checked="true"] span{transform:translateX(18px);}
+
+  .codex-tbl{margin-bottom:var(--da-s-9);overflow:hidden;border-radius:var(--da-r-card);
+    border:1px solid var(--da-line);}
+  .codex-tbl .tablewrap{overflow-x:auto;}
+  /* reference tables fit the screen; they must not inherit the master
+     list's 820px floor or the name column falls off the right */
+  .codex-tbl table{min-width:0;width:100%;table-layout:auto;}
+  .codex-tbl th,.codex-tbl td{padding:8px 14px;}
+  .codex-tbl td{border-top:1px solid var(--da-line);font-size:13px;
+    color:var(--da-ink);vertical-align:middle;}
+  .codex-tbl td.code{width:1%;white-space:nowrap;}
+  .codex-tbl tbody tr:nth-child(even){background:var(--da-surface-2);}
+  .codex-count{font:600 11px/1 var(--da-font-mono);color:var(--da-muted);margin-left:6px;}
+  .codex-tbl td{text-align:left;}
+
+  /* ---- Manifest ---- */
+  .mf-search{margin-bottom:var(--da-s-5);}
+  .mf-search input{
+    width:100%;min-height:44px;padding:11px var(--da-s-6);
+    border:1px solid var(--da-line);border-radius:var(--da-r-control);
+    background:var(--da-surface);color:var(--da-ink);
+    font:400 14px/1.2 var(--da-font-ui);
+  }
+  .mf-filters{margin-bottom:var(--da-s-6);}
+  .mf-chip{
+    flex:0 0 auto;min-height:36px;padding:7px var(--da-s-6);cursor:pointer;
+    background:var(--da-surface);border:1px solid var(--da-line);
+    border-radius:var(--da-r-chip);color:var(--da-muted);
+    font:600 12px/1 var(--da-font-ui);white-space:nowrap;
+    transition:background 180ms ease,color 180ms ease,border-color 180ms ease;
+  }
+  .mf-chip.on{background:var(--da-fill);color:var(--da-on-fill);border-color:var(--da-fill);}
+  .mf-count{margin:var(--da-s-6) 0 var(--da-s-5);font-size:12px;color:var(--da-muted);}
+
+  /* Three file dots: source / print-ready / mockups. Filled means on disk. */
+  .mf-dots{display:inline-flex;gap:4px;vertical-align:middle;}
+  .mf-dot{
+    width:7px;height:7px;border-radius:50%;
+    border:1px solid var(--da-line);background:transparent;
+  }
+  .mf-dot.on{background:var(--da-st-src);border-color:var(--da-st-src);}
+  .mf-dot.na{border-style:dashed;opacity:.5;}
+  .mf-lock{color:var(--da-danger-text);font-size:11px;font-weight:700;margin-left:6px;}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px;}
   .stat{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
   .stat .n{font-size:24px;font-weight:700;}
@@ -33,7 +402,7 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end;}
   .grid .field.full{grid-column:1/-1;}
   #authGate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(165deg,#0A1730 0%,#0C2350 55%,#0C3482 130%);padding:20px;}
+    background:var(--da-night);padding:20px;}
   #authGate .authCard{width:100%;max-width:380px;background:var(--panel);border:1px solid var(--border);
     border-radius:14px;padding:26px 24px;box-shadow:0 12px 40px rgba(0,0,0,.45);}
   #authGate .authLogo{display:block;height:58px;width:auto;margin:0 auto 14px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.45));}
@@ -46,7 +415,7 @@
   #authGate .row2{display:flex;gap:10px;}
   #authGate .row2 > div{flex:1;}
   #authGate .authBtn{width:100%;margin-top:16px;padding:11px;border:none;border-radius:8px;cursor:pointer;
-    background:var(--accent);color:#04121f;font-weight:700;font-size:14px;}
+    background:var(--da-fill);color:var(--da-on-fill);font-weight:700;font-size:14px;}
   #authGate .authBtn:disabled{opacity:.6;cursor:default;}
   #authGate .toggle{margin-top:14px;font-size:13px;color:var(--muted);text-align:center;}
   #authGate .toggle a{color:var(--accent2);cursor:pointer;text-decoration:underline;}
@@ -56,7 +425,7 @@
   .acct-chip{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);
     border-radius:20px;padding:5px 10px 5px 12px;font-size:13px;color:var(--text);}
   .acct-chip b{color:var(--accent2);}
-  .acct-chip .code{background:var(--accent);color:#04121f;font-weight:700;border-radius:12px;padding:2px 8px;font-size:12px;}
+  .acct-chip .code{background:var(--da-fill);color:var(--da-on-fill);font-weight:700;border-radius:12px;padding:2px 8px;font-size:12px;}
   .prodgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:340px;
     overflow:auto;padding:6px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);}
   .prodgrid label{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;font-weight:400;margin:0;
@@ -66,8 +435,8 @@
   .prodgrid .catlabel{grid-column:1/-1;font-weight:700;color:var(--accent2);font-size:11px;text-transform:uppercase;
     letter-spacing:.5px;padding:8px 4px 2px;}
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:2px;}
-  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#04121f;border-radius:14px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;}
-  .chip button{border:none;background:rgba(4,18,31,.25);color:#04121f;border-radius:50%;width:16px;height:16px;line-height:14px;text-align:center;cursor:pointer;font-size:13px;padding:0;}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--da-fill);color:var(--da-on-fill);border-radius:14px;padding:3px 6px 3px 11px;font-size:12px;font-weight:600;}
+  .chip button{border:none;background:rgba(255,255,255,.28);color:var(--da-on-fill);border-radius:50%;width:16px;height:16px;line-height:14px;text-align:center;cursor:pointer;font-size:13px;padding:0;}
   .chip button:hover{background:rgba(4,18,31,.5);}
   #batchPreview{font-family:"SF Mono",Consolas,monospace;font-size:12px;color:var(--accent2);
     background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;max-height:200px;
@@ -136,14 +505,112 @@
   @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
   @keyframes toastOut{to{opacity:0;transform:translateY(10px);}}
   /* --- tabs --- */
-  .tabbar{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-  .tabbtn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);
-    font-size:14px;font-weight:600;padding:10px 18px;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px;}
-  .tabbtn:hover{color:var(--text);background:var(--panel2);}
-  .tabbtn.active{color:var(--cyan);border-bottom-color:var(--accent);}
   .tabpanel{display:none;}
   .tabpanel.active{display:block;animation:tabIn .18s ease-out;}
   @keyframes tabIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  /* =====================================================================
+     Primary navigation.
+     Phone  (<=767): fixed bottom tab bar, navy chrome, 3px cyan top rule.
+     768up : fixed 94px left rail; header and content inset to clear it.
+     Touch targets are 44px minimum everywhere.
+     ===================================================================== */
+  .danav{
+    position:fixed;left:0;right:0;bottom:0;z-index:900;
+    display:flex;align-items:stretch;justify-content:space-around;
+    background:var(--da-night);border-top:3px solid var(--da-cyan);
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  .danav__brand{display:none;}
+  .danav__item{
+    flex:1 1 0;min-width:0;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    min-height:52px;padding:7px 2px;
+    background:none;border:none;cursor:pointer;
+    color:#7fa8c0;font:600 10px/1.1 var(--da-font-ui);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .danav__item svg{width:22px;height:22px;flex:none;}
+  .danav__item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .danav__item.active{color:var(--da-cyan-light);}
+  .danav__item.active::before{
+    content:"";position:absolute;top:-3px;left:50%;transform:translateX(-50%);
+    width:30px;height:3px;border-radius:0 0 3px 3px;background:var(--da-cyan);
+  }
+  .danav__dot{
+    position:absolute;top:6px;right:calc(50% - 18px);
+    width:8px;height:8px;border-radius:50%;background:var(--da-warning);
+    border:1.5px solid var(--da-night-1);
+  }
+  .wrap{padding-bottom:calc(74px + env(safe-area-inset-bottom,0));}
+
+  @media(min-width:768px){
+    .danav{
+      top:0;bottom:0;right:auto;width:94px;
+      flex-direction:column;justify-content:flex-start;gap:2px;
+      border-top:none;border-right:3px solid var(--da-cyan);
+      padding:14px 0 calc(14px + env(safe-area-inset-bottom,0));
+      overflow-y:auto;
+    }
+    .danav__brand{display:block;padding:4px 8px 18px;text-align:center;}
+    .danav__brand img{width:78px;height:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4));}
+    /* the rail carries the lockup, so the header does not need it too */
+    header .brand img{display:none;}
+    .danav__item{flex:0 0 auto;min-height:62px;gap:5px;font-size:11px;padding:9px 4px;}
+    .danav__item.active::before{
+      top:50%;left:0;transform:translateY(-50%);
+      width:3px;height:30px;border-radius:0 3px 3px 0;
+    }
+    .danav__dot{top:9px;right:calc(50% - 20px);}
+    header{padding-left:calc(94px + 28px);}
+    .wrap{padding-left:calc(94px + 28px);padding-bottom:34px;}
+    #authGate{padding-left:20px;}
+  }
+
+  /* Bottom sheet — 26px top radius, 3px cyan rule, grab handle, blurred scrim.
+     Sits above the tab bar. Tap outside to close. */
+  .dasheet-scrim{
+    position:fixed;inset:0;z-index:950;
+    background:rgba(4,16,31,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  }
+  .dasheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:960;
+    background:var(--da-surface);
+    border-top:3px solid var(--da-cyan);
+    border-radius:var(--da-r-sheet) var(--da-r-sheet) 0 0;
+    box-shadow:var(--da-shadow-sheet);
+    padding:10px 0 calc(16px + env(safe-area-inset-bottom,0));
+    max-height:82vh;overflow-y:auto;
+    animation:sheetIn .18s ease-out;
+  }
+  @keyframes sheetIn{from{transform:translateY(14px);opacity:.6;}to{transform:none;opacity:1;}}
+  .dasheet__grab{
+    width:38px;height:4px;border-radius:2px;background:var(--da-line);
+    margin:2px auto 14px;
+  }
+  .dasheet__row{
+    display:flex;align-items:center;gap:var(--da-s-5);width:100%;
+    min-height:44px;padding:11px var(--da-s-7);
+    background:none;border:none;cursor:pointer;text-align:left;
+    color:var(--da-ink);font:400 14px/1.3 var(--da-font-ui);
+  }
+  .dasheet__row:hover{background:var(--da-surface-2);}
+  .dasheet__ico{font-size:19px;flex:none;width:26px;text-align:center;}
+  .dasheet__row b{display:block;font-weight:600;font-size:14px;}
+  .dasheet__row i{display:block;font-style:normal;color:var(--da-muted);font-size:12px;margin-top:2px;}
+  .dasheet__row > span:nth-child(2){flex:1;min-width:0;}
+  .dasheet__count{
+    flex:none;font:700 11px/1 var(--da-font-mono);padding:4px 7px;border-radius:var(--da-r-pill);
+    background:color-mix(in srgb, var(--da-warning) 18%, transparent);color:var(--da-warning);
+  }
+  @media(min-width:768px){
+    .dasheet{
+      left:106px;right:auto;bottom:14px;width:360px;
+      border-radius:var(--da-r-card-lg);border:1px solid var(--da-line);border-top:3px solid var(--da-cyan);
+      box-shadow:var(--da-shadow-raised);
+    }
+    .dasheet__grab{display:none;}
+  }
   .tmpl-cat{margin:20px 0 10px;font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:.6px;font-weight:700;}
   .tmpl-cat.first{margin-top:0;}
   .tmpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
@@ -152,7 +619,7 @@
   .tmpl-card .dim{color:var(--accent2);font-size:12px;}
   .tmpl-card .desc{color:var(--muted);font-size:12px;line-height:1.45;flex:1;margin:2px 0 4px;}
   .tmpl-dl{display:flex;gap:8px;}
-  .tmpl-dl a{flex:1;text-align:center;text-decoration:none;background:var(--accent);color:#04121f;font-weight:700;font-size:12px;padding:8px 6px;border-radius:8px;letter-spacing:.3px;}
+  .tmpl-dl a{flex:1;text-align:center;text-decoration:none;background:var(--da-fill);color:var(--da-on-fill);font-weight:700;font-size:12px;padding:8px 6px;border-radius:8px;letter-spacing:.3px;}
   .tmpl-dl a.png{background:var(--panel);color:var(--accent2);border:1px solid var(--border);}
   .tmpl-dl a:hover{filter:brightness(1.08);}
   .tmpl-card .fits{color:var(--muted);font-size:11.5px;line-height:1.4;}
@@ -196,8 +663,6 @@
     .stat .l{font-size:11px;}
     form,.grid{grid-template-columns:1fr;gap:11px;}
     .prodgrid{grid-template-columns:1fr 1fr;max-height:44vh;}
-    .tabbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0;}
-    .tabbtn{padding:11px 14px;font-size:13px;white-space:nowrap;flex:0 0 auto;}
     .toolbar{gap:8px;}
     table{font-size:12px;min-width:680px;}
     th,td{padding:7px 8px;}
@@ -244,16 +709,16 @@
   .req-card .req-email{font-size:12.5px;color:var(--accent2);margin:3px 0;}
   .req-actions{display:flex;align-items:center;gap:10px;padding:12px 4px;flex-wrap:wrap;justify-content:center;}
   .req-btn{background:transparent;border:2px solid var(--accent2);color:#fff;font-weight:800;font-size:14px;padding:9px 18px;border-radius:12px;cursor:pointer;letter-spacing:.3px;}
-  .req-btn:hover{background:var(--accent2);color:#04121f;}
+  .req-btn:hover{background:var(--da-fill);color:var(--da-on-fill);}
   .req-status{display:flex;align-items:center;justify-content:center;min-width:120px;padding:0 14px;font-weight:800;font-size:16px;text-transform:capitalize;}
   .req-status.pending{background:var(--warn);color:#3a2500;}
-  .req-status.approved{background:var(--good);color:#052117;}
+  .req-status.approved{background:var(--good);color:var(--da-on-success);}
   .req-status.denied{background:var(--bad);color:#2a0606;}
   @media(max-width:680px){ .req-card{flex-wrap:wrap;} .req-actions{width:100%;justify-content:flex-start;padding:0 16px 12px;} .req-status{width:100%;min-height:44px;} }
   .req-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
   .req-filter{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:20px;cursor:pointer;}
   .req-filter:hover{color:var(--text);border-color:var(--accent2);}
-  .req-filter.on{background:var(--accent2);color:#04121f;border-color:var(--accent2);}
+  .req-filter.on{background:var(--da-fill);color:var(--da-on-fill);border-color:var(--accent2);}
   .req-meta{font-size:11.5px;color:var(--muted);margin:2px 0 4px;}
   .req-reason{font-size:12.5px;margin-top:6px;color:var(--bad);}
   .req-reason b{color:var(--bad);}
@@ -264,8 +729,8 @@
   .req-btn.sm{font-size:12.5px;padding:6px 13px;border-radius:8px;}
   .req-btn.ghost{border-color:var(--border);color:var(--muted);}
   .req-btn.ghost:hover{background:var(--panel);color:var(--text);}
-  .req-btn.invite{background:var(--good);border-color:var(--good);color:#052117;}
-  .req-btn.invite:hover{background:var(--good);color:#052117;filter:brightness(1.1);}
+  .req-btn.invite{background:var(--good);border-color:var(--good);color:var(--da-on-success);}
+  .req-btn.invite:hover{background:var(--good);color:var(--da-on-success);filter:brightness(1.1);}
   #authGate .links-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
   #authGate .links-grid .lnk{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);margin:0;text-transform:none;letter-spacing:0;}
   #authGate .links-grid .lnk input{margin:0;padding:8px 10px;font-size:13px;}
@@ -274,7 +739,7 @@
   .artist-card>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   .artist-card>summary::-webkit-details-marker{display:none;}
   .artist-card .a-name{font-weight:700;font-size:15px;color:var(--text);display:inline-flex;align-items:center;gap:6px;}
-  .artist-card .a-code{background:var(--accent);color:#04121f;border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;}
+  .artist-card .a-code{background:var(--da-fill);color:var(--da-on-fill);border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;}
   .artist-card .a-meta{font-size:12.5px;color:var(--muted);}
   .artist-card .a-body{padding:0 16px 16px;}
   .a-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:12px;}
@@ -357,24 +822,185 @@
   </div>
 </header>
 
+<!-- =====================================================================
+     Primary navigation. Bottom tab bar on phones, left rail from 768up.
+     Five manager destinations (Vault, Manifest, Ingest, Artists, Codex);
+     everything else is a sub-screen reached from one of them or from More.
+     ===================================================================== -->
+<nav class="danav" id="daNav" aria-label="Primary">
+  <a class="danav__brand" href="#" onclick="switchTab('vault');return false;" aria-label="Digital Alchemists">
+    <img src="assets/da-logo.png" alt="">
+  </a>
+  <button class="danav__item active" data-tab="vault" onclick="switchTab('vault')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6M10 3v5.5L4.8 18a2 2 0 0 0 1.7 3h11a2 2 0 0 0 1.7-3L14 8.5V3"/><path d="M7.5 14h9"/></svg>
+    <span>Vault</span>
+  </button>
+  <button class="danav__item" data-tab="manifest" onclick="switchTab('manifest')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+    <span>Manifest</span>
+  </button>
+  <button class="danav__item" data-tab="ingest" onclick="switchTab('ingest')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    <span>Ingest</span>
+  </button>
+  <button class="danav__item mgr-only" data-tab="artists" onclick="switchTab('artists')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.3a3.2 3.2 0 0 1 0 5.9M17.5 14.6a5.5 5.5 0 0 1 3 4.9"/></svg>
+    <span>Artists</span>
+  </button>
+  <button class="danav__item" data-tab="codex" onclick="switchTab('codex')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H19v15H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 7.5h7M8 11h5"/></svg>
+    <span>Codex</span>
+  </button>
+  <button class="danav__item danav__more" id="daMoreBtn" onclick="daToggleMore()" aria-haspopup="true" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg>
+    <span>More</span>
+    <span class="danav__dot" id="daMoreDot" hidden></span>
+  </button>
+</nav>
+
+<!-- More: the secondary destinations, as a sheet on phone / popover on rail -->
+<div class="dasheet-scrim" id="daMoreScrim" onclick="daToggleMore(false)" hidden></div>
+<div class="dasheet" id="daMoreSheet" role="menu" hidden>
+  <div class="dasheet__grab"></div>
+  <div class="da-kicker" style="padding:0 var(--da-s-7) var(--da-s-4);">Everything else</div>
+  <button class="dasheet__row mgr-only" onclick="switchTab('gate')">
+    <span class="dasheet__ico">🔒</span>
+    <span><b>The Gate</b><i>Designs blocked on paperwork</i></span>
+    <span class="dasheet__count warn" id="daGateCount" hidden>0</span>
+  </button>
+  <button class="dasheet__row" onclick="switchTab('documents')">
+    <span class="dasheet__ico">📄</span>
+    <span><b>Signing Log</b><i>Every signed document and where it is filed</i></span>
+  </button>
+  <button class="dasheet__row" onclick="switchTab('templates')">
+    <span class="dasheet__ico">🖼️</span>
+    <span><b>Templates &amp; Resources</b><i>Print templates and brand assets</i></span>
+  </button>
+  <button class="dasheet__row mgr-only" onclick="switchTab('applications')">
+    <span class="dasheet__ico">✉️</span>
+    <span><b>Applications</b><i>Artists asking to join</i></span>
+    <span class="dasheet__count warn" id="daAppsCount" hidden>0</span>
+  </button>
+  <button class="dasheet__row mgr-only" onclick="switchTab('utilities')">
+    <span class="dasheet__ico">🧰</span>
+    <span><b>Utilities</b><i>Shipping tables, import and export</i></span>
+  </button>
+</div>
+
 <div class="wrap">
-  <div class="tabbar">
-    <button class="tabbtn active" data-tab="manager" onclick="switchTab('manager')">Product Manager</button>
-    <button class="tabbtn" data-tab="templates" onclick="switchTab('templates')">Templates / Resources</button>
-    <button class="tabbtn" data-tab="documents" onclick="switchTab('documents')">Documents</button>
-    <button class="tabbtn mgr-only" data-tab="applications" onclick="switchTab('applications')">Applications <span id="reqTabCount" class="pill warn" style="font-size:10px;padding:1px 6px;display:none;">0</span></button>
-    <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button>
-    <button class="tabbtn mgr-only" data-tab="utilities" onclick="switchTab('utilities')">Utilities</button>
+  <!-- ===== The Vault — what needs me today ===== -->
+  <div id="tab-vault" class="tabpanel active">
+    <div class="vault-head">
+      <div class="da-kicker" id="vaultDate"></div>
+      <h2 class="da-title">The Vault</h2>
+    </div>
+    <div id="vaultGate"></div>
+    <div class="vault-sec">
+      <div class="da-kicker">The line</div>
+      <div class="line-chips" id="vaultLine"></div>
+    </div>
+    <div class="vault-sec">
+      <div class="da-kicker">Needs you today</div>
+      <div id="vaultNeeds"></div>
+    </div>
+    <div class="vault-actions">
+      <button class="btn-grad" onclick="switchTab('ingest')">Ingest a design</button>
+      <button class="btn ghost" onclick="switchTab('templates')">Templates &amp; specs</button>
+    </div>
+    <div class="vault-sec">
+      <div class="da-kicker">Payouts owed</div>
+      <div id="vaultPayouts"></div>
+    </div>
+  </div><!-- /tab-vault -->
+
+  <!-- ===== The Gate — nothing lists without signed paperwork ===== -->
+  <div id="tab-gate" class="tabpanel">
+    <div id="gateHero"></div>
+    <div class="da-callout" style="margin:var(--da-s-7) 0;">
+      Nothing goes live without the artist's paperwork on file. A design can reach
+      <b>Ready to list</b> while it is blocked — it can never reach <b>Live</b>.
+      Logging the missing document releases every one of that artist's designs at once.
+    </div>
+    <div id="gateMissing"></div>
+    <div id="gateBlocked"></div>
+  </div><!-- /tab-gate -->
+
+  <!-- ===== Codex — read-only reference tables ===== -->
+  <div id="tab-codex" class="tabpanel">
+    <div class="vault-head">
+      <div class="da-kicker">Reference</div>
+      <h2 class="da-title">Codex</h2>
+    </div>
+    <div class="da-card codex-theme">
+      <div>
+        <b>Night mode</b>
+        <div class="hint">Every colour is a token; both themes are specified.</div>
+      </div>
+      <button class="daswitch" id="themeSwitch" role="switch" aria-checked="false"
+              onclick="daToggleTheme()" aria-label="Night mode"><span></span></button>
+    </div>
+    <div class="da-callout" style="margin:var(--da-s-7) 0;">
+      These tables are read-only. <code>SKU Generation.xlsx → Lists</code> is the source of
+      truth — add a code there first, then it appears here. Never invent a code.
+    </div>
+    <div id="codexTables"></div>
+  </div><!-- /tab-codex -->
+
+  <!-- ===== Manifest — search / filter / scan the whole catalogue ===== -->
+  <div id="tab-manifest" class="tabpanel">
+  <div class="vault-head">
+    <div class="da-kicker">Catalogue</div>
+    <h2 class="da-title">Manifest</h2>
   </div>
-  <div id="tab-manager" class="tabpanel active">
+
+  <div class="mf-search">
+    <input type="search" id="mfSearch" placeholder="Search SKU, title or code"
+           oninput="daRenderManifest()" aria-label="Search the manifest">
+  </div>
+  <div class="line-chips" id="mfFilters"></div>
+  <div id="mfList"></div>
+
   <div class="stats" id="stats"></div>
 
-  
+  <div class="card">
+    <h2 id="listTitle">Master list</h2>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search artist, title, SKU, vendor..." oninput="render()">
+      <label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Sort by <select id="sortSel" onchange="setSort(this.value)"><option value="artist">Artist</option><option value="title">Illustration / Title</option><option value="sku">SKU</option><option value="size">Size</option><option value="vendor">Vendor</option><option value="price">Price</option><option value="qty">Qty</option><option value="margin">Margin %</option></select></label>
+      <button class="btn ghost sm" id="sortDirBtn" onclick="toggleSortDir()" title="Ascending / descending">▲</button>
+      <span class="ship-cfg" style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:4px;">Ship est: base $<input type="number" id="shipBase" value="1.00" step="0.25" min="0" style="width:58px" oninput="saveShipCfg();render()"> + $<input type="number" id="shipRate" value="0.20" step="0.05" min="0" style="width:52px" oninput="saveShipCfg();render()">/oz</span>
+      <button class="btn ghost sm" onclick="clearAll()">Clear all data</button>
+    </div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th data-k="sku">SKU</th>
+            <th data-k="artist">Artist</th>
+            <th data-k="title">Illustration / Title</th>
+            <th>Img</th>
+            <th data-k="size">Size</th>
+            <th data-k="vendor" class="mgr-only">Vendor</th>
+            <th data-k="cost" class="num mgr-only">Cost</th>
+            <th data-k="price" class="num">Price</th>
+            <th data-k="margin" class="num mgr-only">Margin</th>
+            <th data-k="earn" class="num">Artist earns</th>
+            <th data-k="qty" class="num">Qty</th>
+            <th data-k="status">Status</th>
+            <th data-k="stage">Stage</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+  </div><!-- /tab-manifest -->
 
-  
-
+  <!-- ===== Ingest — the SKU builder ===== -->
+  <div id="tab-ingest" class="tabpanel">
   <div class="card" style="border-color:var(--accent2);">
-    <h2 style="display:flex;align-items:center;gap:8px;">🎨 Design → Products <span class="pill" style="background:var(--accent2);color:#04121f;font-weight:600;">batch</span></h2>
+    <h2 style="display:flex;align-items:center;gap:8px;">🎨 Design → Products <span class="pill" style="background:var(--da-fill);color:var(--da-on-fill);font-weight:600;">batch</span></h2>
     <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:14px;">
       Attach one design, pick its collection, then check off every product you want made from it.
       One SKU + inventory row is created per product — all sharing your artist code and this collection.
@@ -538,43 +1164,7 @@
     </form>
     <div class="hint" style="margin-top:10px;">SKU auto-builds from title + size (editable). Margin, inventory value, and low-stock flags calculate automatically.</div>
   </details>
-
-  <div class="card">
-    <h2 id="listTitle">Master list</h2>
-    <div class="toolbar">
-      <input type="search" id="search" placeholder="Search artist, title, SKU, vendor..." oninput="render()">
-      <label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Sort by <select id="sortSel" onchange="setSort(this.value)"><option value="artist">Artist</option><option value="title">Illustration / Title</option><option value="sku">SKU</option><option value="size">Size</option><option value="vendor">Vendor</option><option value="price">Price</option><option value="qty">Qty</option><option value="margin">Margin %</option></select></label>
-      <button class="btn ghost sm" id="sortDirBtn" onclick="toggleSortDir()" title="Ascending / descending">▲</button>
-      <span class="ship-cfg" style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:4px;">Ship est: base $<input type="number" id="shipBase" value="1.00" step="0.25" min="0" style="width:58px" oninput="saveShipCfg();render()"> + $<input type="number" id="shipRate" value="0.20" step="0.05" min="0" style="width:52px" oninput="saveShipCfg();render()">/oz</span>
-      <button class="btn ghost sm" onclick="clearAll()">Clear all data</button>
-    </div>
-    <div class="tablewrap">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th data-k="sku">SKU</th>
-            <th data-k="artist">Artist</th>
-            <th data-k="title">Illustration / Title</th>
-            <th>Img</th>
-            <th data-k="size">Size</th>
-            <th data-k="vendor" class="mgr-only">Vendor</th>
-            <th data-k="cost" class="num mgr-only">Cost</th>
-            <th data-k="price" class="num">Price</th>
-            <th data-k="margin" class="num mgr-only">Margin</th>
-            <th data-k="earn" class="num">Artist earns</th>
-            <th data-k="qty" class="num">Qty</th>
-            <th data-k="status">Status</th>
-            <th data-k="stage">Stage</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
-  
-
-  </div><!-- /tab-manager -->
+  </div><!-- /tab-ingest -->
 
   <div id="tab-templates" class="tabpanel">
     <div class="card">
@@ -1237,6 +1827,7 @@ ${it.hasImg?`<button class="btn ghost sm" onclick="downloadImg('${it.id}','${esc
     }).join('');
   }
   renderStats();
+  try{ if(window.daRenderManifest) window.daRenderManifest(); }catch(e){ console.error('manifest',e); }
 }
 
 function renderStats(){
@@ -1376,6 +1967,8 @@ if(!localStorage.getItem('da_seeded') && items.length===0){
 }
 </script>
 <script>
+/* Category names — one global copy; the builder IIFEs below alias it. */
+window.DA_CATNAMES={APP:'Apparel / Soft Objects',ACC:'Accessories (2-2.5D)',PRI:'Printed 2D','3D':'Models / Plushies 3D',HOM:'Home & Living',DIG:'Digital'};
 const BUILDER = {"artists":[["Colab (multiple artists)","COL"],["Cory / Weylin","WEY"],["Justin / Ink Witch","INK"],["April / Picaru","PIC"],["Digital Alchemists (house)","DA"]],"products":[["APP \u00b7 TEE - Shirts / Tees","APP","TEE"],["APP \u00b7 SWE - Sweatshirts","APP","SWE"],["APP \u00b7 HOO - Hoodies","APP","HOO"],["APP \u00b7 HHO - Hockey Hoodies","APP","HHO"],["APP \u00b7 ZIP - Zip-Up Hoodies","APP","ZIP"],["APP \u00b7 LSH - Longsleeve Shirts","APP","LSH"],["APP \u00b7 TTO - Tank Tops","APP","TTO"],["APP \u00b7 JAK - Jackets","APP","JAK"],["APP \u00b7 HAT - Hats / Caps","APP","HAT"],["APP \u00b7 TOT - Tote Bags","APP","TOT"],["APP \u00b7 BUC - Bucket Bag","APP","BUC"],["APP \u00b7 DRB - Drawstring Backpack","APP","DRB"],["APP \u00b7 ZPB - Zipper Pouch","APP","ZPB"],["APP \u00b7 CNP - Coin Purse","APP","CNP"],["APP \u00b7 SCF - Silk Scarf","APP","SCF"],["APP \u00b7 LAN - Lanyards","APP","LAN"],["APP \u00b7 PCC - Pencil Cases","APP","PCC"],["APP \u00b7 MOU - Mousepads","APP","MOU"],["APP \u00b7 3MP - 3D Mousepads","APP","3MP"],["APP \u00b7 CMP - RGB Mousepads","APP","CMP"],["ACC \u00b7 ACK - Acrylic Charm / Keychain","ACC","ACK"],["ACC \u00b7 ACP - Acrylic Pin","ACC","ACP"],["ACC \u00b7 ACS - Acrylic Standee","ACC","ACS"],["ACC \u00b7 WPI - Wooden Pin","ACC","WPI"],["ACC \u00b7 PVC - PVC Rubber Charm","ACC","PVC"],["ACC \u00b7 PAT - Patch","ACC","PAT"],["ACC \u00b7 BUT - Button / Badge","ACC","BUT"],["ACC \u00b7 EPH - Hard Enamel Pin","ACC","EPH"],["ACC \u00b7 EPS - Soft Enamel Pin","ACC","EPS"],["ACC \u00b7 PHC - Phone Case","ACC","PHC"],["ACC \u00b7 SHK - Shaker Charm","ACC","SHK"],["ACC \u00b7 QSD - Quicksand Charm","ACC","QSD"],["ACC \u00b7 WDK - Wooden Keychain","ACC","WDK"],["ACC \u00b7 MTK - Metal Keychain","ACC","MTK"],["ACC \u00b7 PLK - Plush Keychain","ACC","PLK"],["ACC \u00b7 BDR - Badge Reel","ACC","BDR"],["ACC \u00b7 PGR - Phone Grip","ACC","PGR"],["ACC \u00b7 PST - Phone Strap","ACC","PST"],["ACC \u00b7 EAR - Earrings","ACC","EAR"],["ACC \u00b7 BRC - Bracelet","ACC","BRC"],["ACC \u00b7 NCK - Necklace / Pendant","ACC","NCK"],["ACC \u00b7 HRC - Hair Clip","ACC","HRC"],["ACC \u00b7 HRT - Hair Tie / Scrunchie","ACC","HRT"],["PRI \u00b7 PRI - Art Print","PRI","PRI"],["PRI \u00b7 STI - Vinyl Sticker","PRI","STI"],["PRI \u00b7 PEE - Decal / Peeker","PRI","PEE"],["PRI \u00b7 WAS - Washi Tape","PRI","WAS"],["PRI \u00b7 MEM - Memo Pad","PRI","MEM"],["PRI \u00b7 BOO - Book","PRI","BOO"],["PRI \u00b7 TCG - Trading / Holo Card","PRI","TCG"],["PRI \u00b7 CRD - Game / Tarot Card","PRI","CRD"],["PRI \u00b7 LEN - Lenticular Card","PRI","LEN"],["PRI \u00b7 POS - Poster","PRI","POS"],["PRI \u00b7 GRC - Greeting / Post Card","PRI","GRC"],["PRI \u00b7 SHI - Shikishi Board","PRI","SHI"],["PRI \u00b7 STN - Sticky Notes","PRI","STN"],["PRI \u00b7 BKM - Bookmark","PRI","BKM"],["PRI \u00b7 BCD - Business Card","PRI","BCD"],["PRI \u00b7 NTB - Notebook","PRI","NTB"],["PRI \u00b7 PUF - Puffy Sticker","PRI","PUF"],["PRI \u00b7 SUN - Suncatcher Sticker","PRI","SUN"],["PRI \u00b7 SSH - Sticker Sheet","PRI","SSH"],["PRI \u00b7 SBK - Sticker Book","PRI","SBK"],["3D \u00b7 3DM - 3D Model","3D","3DM"],["3D \u00b7 PLU - Plushie","3D","PLU"],["HOM \u00b7 PIL - Throw Pillow","HOM","PIL"],["HOM \u00b7 DAK - Dakimakura","HOM","DAK"],["HOM \u00b7 BLK - Blanket","HOM","BLK"],["HOM \u00b7 TAP - Tapestry","HOM","TAP"],["HOM \u00b7 COA - Coaster","HOM","COA"],["HOM \u00b7 FMG - Fridge Magnet","HOM","FMG"],["HOM \u00b7 SLM - Sleep Mask","HOM","SLM"],["DIG \u00b7 BRU - Brushes","DIG","BRU"],["DIG \u00b7 TUT - Tutorials","DIG","TUT"]],"designs":[["OGC - Original Character","OGC"],["TFO - The Fearful Odds","TFO"],["WOT - Warriors of the Twilight","WOT"],["DED - Devil Dumplings","DED"],["MKC - Mushroom Kingdom Crown","MKC"],["KAK - Kami Kitchen","KAK"],["NIN - Nintendo","NIN"],["GUG - Guilty Gear","GUG"],["STR - Street Fighter","STR"],["STH - Sonic the Hedgehog","STH"],["DRA - Dragonball","DRA"],["UWU - Furry","UWU"],["DA - Digital Alchemists","DA"],["COV - Code Vein","COV"],["KIT - Po-Kitsunes","KIT"],["CBP - Cherry Blossom Picked","CBP"],["LNY - Lunar New Year MA","LNY"],["DDC - Demon Dice","DDC"],["TWE - TWEWY","TWE"],["FIS - Fishing","FIS"],["RAN - Random","RAN"]],"sizes":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"],["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"],["Button 1.25in","1.25"],["Button 2.25in","2.25"],["Button 3.25in","3.25"],["Sheet A6","A6"],["Sheet A5","A5"],["Sheet A4","A4"],["Poster A3","A3"],["Poster A2","A2"],["Sticker 2x2 in","2IN"],["Sticker 3x3 in","3IN"],["Sticker 4x4 in","4IN"],["Mousepad Small","S"],["Mousepad Large","L"],["Desk Mat 1","DM1"],["Desk Mat 2","DM2"],["Desk Mat 3","DM3"],["Plush 7.5cm","P08"],["Plush 10cm","P10"],["Plush 15cm","P15"],["Plush 20cm","P20"],["Daki 40x120","DK1"],["Daki 45x120","DK2"],["Daki 50x150","DK3"],["Daki 50x160","DK4"],["Daki 50x180","DK5"],["Daki 60x180","DK6"],["Blanket 75x100","BLS"],["Blanket 120x150","BLM"],["Blanket 150x200","BLL"],["Pillow Small","PSM"],["Pillow Medium","PMD"],["Pillow Large","PLG"],["Washi 10mm","W10"],["Washi 15mm","W15"],["Washi 30mm","W30"],["Trading Card","TC"],["Tarot","TR"],["Sticker 5x5 in","5IN"],["Sticker 6x6 in","6IN"],["Print 8x10 in","8X10"],["Print 11x14 in","1114"],["Print 11x17 in","1117"],["Print 13x19 in","1319"],["Poster 18x24 in","1824"],["Poster 24x36 in","2436"],["Bookmark 2x6 in","BM26"],["Bookmark 2.5x7 in","BM27"]],"finishes":[["Black","BLK"],["White","WHT"],["Grey","GRY"],["Red","RED"],["Pink","PIN"],["Orange","ORG"],["Yellow","YEL"],["Green","GRN"],["Blue","BLU"],["Purple","PUR"],["Gold","GLD"],["Silver","SLV"],["Multicolor","MUL"],["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Wood","WD"],["Vinyl","VNL"],["Textured","TEX"],["Reflective","REF"],["Hard Enamel","HEN"],["Soft Enamel","SEN"],["Black Nickel","BNK"],["Glossy","GLS"],["Matte","MAT"],["Pearlescent","PRC"],["Linen","LIN"],["Natural","NAT"],["Cherry","CHY"],["Ashwood","ASH"],["Basswood","BAS"],["Whitewood","WHW"],["Standard","STD"],["Metallic","MET"],["Neon","NEO"],["Prismatic","PRS"],["Kraft","KFT"]],"cost":{"ACK|1IN|CLR":2.97,"ACK|1IN|EPX":3.11,"ACK|1IN|GEP":3.2,"ACK|1IN|HOL":3.49,"ACK|1IN|DHO":3.7,"ACK|1IN|*":2.97,"ACK|1.5IN|CLR":2.97,"ACK|1.5IN|EPX":3.11,"ACK|1.5IN|GEP":3.2,"ACK|1.5IN|HOL":3.62,"ACK|1.5IN|DHO":3.83,"ACK|1.5IN|*":2.97,"ACK|2IN|CLR":2.97,"ACK|2IN|EPX":3.14,"ACK|2IN|GEP":3.24,"ACK|2IN|HOL":3.79,"ACK|2IN|DHO":4.01,"ACK|2IN|*":2.97,"ACK|2.5IN|CLR":2.99,"ACK|2.5IN|EPX":3.44,"ACK|2.5IN|GEP":3.65,"ACK|2.5IN|HOL":4.32,"ACK|2.5IN|DHO":4.54,"ACK|2.5IN|*":2.99,"ACK|3IN|CLR":3.74,"ACK|3IN|EPX":4.32,"ACK|3IN|GEP":4.54,"ACK|3IN|HOL":5.21,"ACK|3IN|DHO":5.43,"ACK|3IN|*":3.74,"ACK|3.5IN|CLR":3.96,"ACK|3.5IN|EPX":5.07,"ACK|3.5IN|GEP":5.3,"ACK|3.5IN|HOL":5.65,"ACK|3.5IN|DHO":5.86,"ACK|3.5IN|*":3.96,"ACK|4IN|CLR":4.23,"ACK|4IN|EPX":5.33,"ACK|4IN|GEP":5.55,"ACK|4IN|HOL":5.91,"ACK|4IN|DHO":6.13,"ACK|4IN|*":4.23,"ACK|*|*":2.97,"ACP|1.5IN|CLR":1.74,"ACP|1.5IN|EPX":2.03,"ACP|1.5IN|GEP":2.21,"ACP|1.5IN|HOL":2.03,"ACP|1.5IN|DHO":2.31,"ACP|1.5IN|*":1.74,"ACP|2IN|CLR":1.9,"ACP|2IN|EPX":2.19,"ACP|2IN|GEP":2.37,"ACP|2IN|HOL":2.3,"ACP|2IN|DHO":2.59,"ACP|2IN|*":1.9,"ACP|2.5IN|CLR":2.03,"ACP|2.5IN|EPX":2.31,"ACP|2.5IN|GEP":2.5,"ACP|2.5IN|HOL":2.53,"ACP|2.5IN|DHO":2.83,"ACP|2.5IN|*":2.03,"ACP|3IN|CLR":2.89,"ACP|3IN|EPX":3.19,"ACP|3IN|GEP":3.37,"ACP|3IN|HOL":3.62,"ACP|3IN|DHO":3.91,"ACP|3IN|*":2.89,"ACP|3.5IN|CLR":3.08,"ACP|3.5IN|EPX":3.37,"ACP|3.5IN|GEP":3.54,"ACP|3.5IN|HOL":3.89,"ACP|3.5IN|DHO":4.19,"ACP|3.5IN|*":3.08,"ACP|4IN|CLR":3.53,"ACP|4IN|EPX":3.82,"ACP|4IN|GEP":4,"ACP|4IN|HOL":4.34,"ACP|4IN|DHO":4.64,"ACP|4IN|*":3.53,"ACP|*|*":2.03,"FMG|1.5IN|CLR":3.37,"FMG|1.5IN|EPX":4.42,"FMG|1.5IN|GEP":4.84,"FMG|1.5IN|HOL":4.21,"FMG|1.5IN|DHO":5.26,"FMG|1.5IN|*":3.37,"FMG|2IN|CLR":3.58,"FMG|2IN|EPX":4.63,"FMG|2IN|GEP":5.05,"FMG|2IN|HOL":4.42,"FMG|2IN|DHO":5.47,"FMG|2IN|*":3.58,"FMG|2.5IN|CLR":4,"FMG|2.5IN|EPX":5.26,"FMG|2.5IN|GEP":5.47,"FMG|2.5IN|HOL":4.84,"FMG|2.5IN|DHO":6.1,"FMG|2.5IN|*":4,"FMG|3IN|CLR":4.84,"FMG|3IN|EPX":6.31,"FMG|3IN|GEP":6.52,"FMG|3IN|HOL":5.89,"FMG|3IN|DHO":7.15,"FMG|3IN|*":4.84,"FMG|3.5IN|CLR":6.52,"FMG|3.5IN|EPX":7.99,"FMG|3.5IN|GEP":8.2,"FMG|3.5IN|HOL":9.68,"FMG|3.5IN|DHO":10.94,"FMG|3.5IN|*":6.52,"FMG|4IN|CLR":6.94,"FMG|4IN|EPX":8.2,"FMG|4IN|GEP":8.62,"FMG|4IN|HOL":9.68,"FMG|4IN|DHO":10.94,"FMG|4IN|*":6.94,"FMG|*|*":4,"WDK|1IN|BAS":0.75,"WDK|1IN|CHY":0.88,"WDK|1IN|ASH":0.88,"WDK|1IN|WHW":0.88,"WDK|1IN|NAT":0.88,"WDK|1IN|*":0.88,"WDK|1.5IN|BAS":0.88,"WDK|1.5IN|CHY":1.18,"WDK|1.5IN|ASH":1.18,"WDK|1.5IN|WHW":1.18,"WDK|1.5IN|NAT":1.18,"WDK|1.5IN|*":1.18,"WDK|2IN|BAS":1.07,"WDK|2IN|CHY":1.58,"WDK|2IN|ASH":1.58,"WDK|2IN|WHW":1.58,"WDK|2IN|NAT":1.58,"WDK|2IN|*":1.58,"WDK|2.5IN|BAS":1.21,"WDK|2.5IN|CHY":2.02,"WDK|2.5IN|ASH":2.02,"WDK|2.5IN|WHW":2.02,"WDK|2.5IN|NAT":2.02,"WDK|2.5IN|*":2.02,"WDK|3IN|BAS":1.24,"WDK|3IN|CHY":2.09,"WDK|3IN|ASH":2.09,"WDK|3IN|WHW":2.09,"WDK|3IN|NAT":2.09,"WDK|3IN|*":2.09,"WDK|3.5IN|BAS":1.34,"WDK|3.5IN|CHY":2.32,"WDK|3.5IN|ASH":2.32,"WDK|3.5IN|WHW":2.32,"WDK|3.5IN|NAT":2.32,"WDK|3.5IN|*":2.32,"WDK|4IN|BAS":2.79,"WDK|4IN|CHY":5.56,"WDK|4IN|ASH":5.56,"WDK|4IN|WHW":5.56,"WDK|4IN|NAT":5.56,"WDK|4IN|*":5.56,"WDK|*|*":1.58,"WPI|1IN|BAS":0.75,"WPI|1IN|CHY":0.88,"WPI|1IN|ASH":0.88,"WPI|1IN|WHW":0.88,"WPI|1IN|NAT":0.88,"WPI|1IN|*":0.88,"WPI|1.5IN|BAS":0.88,"WPI|1.5IN|CHY":1.18,"WPI|1.5IN|ASH":1.18,"WPI|1.5IN|WHW":1.18,"WPI|1.5IN|NAT":1.18,"WPI|1.5IN|*":1.18,"WPI|2IN|BAS":1.07,"WPI|2IN|CHY":1.58,"WPI|2IN|ASH":1.58,"WPI|2IN|WHW":1.58,"WPI|2IN|NAT":1.58,"WPI|2IN|*":1.58,"WPI|2.5IN|BAS":1.21,"WPI|2.5IN|CHY":2.02,"WPI|2.5IN|ASH":2.02,"WPI|2.5IN|WHW":2.02,"WPI|2.5IN|NAT":2.02,"WPI|2.5IN|*":2.02,"WPI|3IN|BAS":1.24,"WPI|3IN|CHY":2.09,"WPI|3IN|ASH":2.09,"WPI|3IN|WHW":2.09,"WPI|3IN|NAT":2.09,"WPI|3IN|*":2.09,"WPI|3.5IN|BAS":1.34,"WPI|3.5IN|CHY":2.32,"WPI|3.5IN|ASH":2.32,"WPI|3.5IN|WHW":2.32,"WPI|3.5IN|NAT":2.32,"WPI|3.5IN|*":2.32,"WPI|4IN|BAS":2.79,"WPI|4IN|CHY":5.56,"WPI|4IN|ASH":5.56,"WPI|4IN|WHW":5.56,"WPI|4IN|NAT":5.56,"WPI|4IN|*":5.56,"WPI|*|*":1.58,"SHK|2.5IN|CLR":4.18,"SHK|2.5IN|EPX":4.81,"SHK|2.5IN|GEP":4.91,"SHK|2.5IN|*":4.18,"SHK|3IN|CLR":5.29,"SHK|3IN|EPX":5.92,"SHK|3IN|GEP":6.02,"SHK|3IN|*":5.29,"SHK|3.5IN|CLR":5.34,"SHK|3.5IN|EPX":5.97,"SHK|3.5IN|GEP":6.07,"SHK|3.5IN|*":5.34,"SHK|4IN|CLR":6.99,"SHK|4IN|EPX":7.62,"SHK|4IN|GEP":7.72,"SHK|4IN|*":6.99,"SHK|*|*":5.29,"BUT|1.25|*":0.86,"BUT|2.25|*":1,"BUT|3.25|*":1.29,"BUT|*|*":0.86,"EPH|1IN|*":2.12,"EPH|1.5IN|*":2.39,"EPH|2IN|*":3.18,"EPH|2.5IN|*":3.85,"EPH|*|*":3.18,"EPS|1IN|*":2.12,"EPS|1.5IN|*":2.39,"EPS|2IN|*":3.18,"EPS|2.5IN|*":3.85,"EPS|*|*":3.18,"WAS|W10|*":2,"WAS|W15|*":2.1,"WAS|W30|*":3.68,"WAS|*|*":3,"PLU|P08|*":7.9,"PLU|P10|*":12.7,"PLU|P15|*":18.8,"PLU|P20|*":19.6,"PLU|*|*":16.5,"ACS|*|*":8,"MTK|*|*":2.6,"PLK|*|*":12,"BDR|*|*":2.1,"PGR|*|*":4.2,"PST|*|*":4.5,"EAR|*|*":5.8,"BRC|*|*":5.2,"NCK|*|*":4.9,"HRC|*|*":3.1,"HRT|*|*":4.5,"PVC|*|*":2.13,"PAT|*|*":2,"PHC|*|*":5,"QSD|*|*":7.9,"TEE|*|*":4.86,"TEE|2XL|*":6.75,"TEE|3XL|*":8.37,"SWE|*|*":14,"HOO|*|*":22.06,"HOO|2XL|*":28.38,"HOO|3XL|*":28.38,"HHO|*|*":30.43,"HHO|2XL|*":37.18,"HHO|3XL|*":40.34,"ZIP|*|*":29.3,"ZIP|2XL|*":31.62,"ZIP|3XL|*":31.62,"LSH|*|*":8,"TTO|*|*":6,"JAK|*|*":28,"HAT|*|*":6,"TOT|*|*":4,"BUC|*|*":12.7,"DRB|*|*":7.3,"ZPB|*|*":2.6,"CNP|*|*":11.04,"SCF|*|*":5.8,"LAN|*|*":11,"PCC|*|*":5,"MOU|*|*":2.8,"3MP|*|*":8.15,"CMP|*|*":0,"PEE|*|*":1.5,"MEM|*|*":2.3,"BOO|*|*":6,"TCG|*|*":1.4,"CRD|*|*":0.4,"LEN|*|*":1.6,"GRC|*|*":0.8,"SHI|*|*":3.2,"STN|*|*":1.1,"BCD|*|*":7.5,"NTB|*|*":4.8,"PUF|*|*":3.6,"SUN|*|*":0.9,"SSH|*|*":3.5,"SBK|*|*":6,"3DM|*|*":0,"PIL|*|*":9.5,"DAK|*|*":16,"BLK|*|*":14,"TAP|*|*":12,"COA|*|*":4.5,"SLM|*|*":4,"BRU|*|*":0,"TUT|*|*":0,"STI|2IN|*":0.52,"STI|2IN|HOL":0.65,"STI|2IN|GLI":0.65,"STI|2IN|MIR":0.65,"STI|2IN|PRS":0.65,"STI|2IN|FOI":0.65,"STI|3IN|*":0.8,"STI|3IN|HOL":1,"STI|3IN|GLI":1,"STI|3IN|MIR":1,"STI|3IN|PRS":1,"STI|3IN|FOI":1,"STI|4IN|*":1.1,"STI|4IN|HOL":1.38,"STI|4IN|GLI":1.38,"STI|4IN|MIR":1.38,"STI|4IN|PRS":1.38,"STI|4IN|FOI":1.38,"STI|5IN|*":1.42,"STI|5IN|HOL":1.77,"STI|5IN|GLI":1.77,"STI|5IN|MIR":1.77,"STI|5IN|PRS":1.77,"STI|5IN|FOI":1.77,"STI|6IN|*":1.75,"STI|6IN|HOL":2.19,"STI|6IN|GLI":2.19,"STI|6IN|MIR":2.19,"STI|6IN|PRS":2.19,"STI|6IN|FOI":2.19,"STI|*|*":0.8,"PRI|8X10|*":0.72,"PRI|1114|*":0.89,"PRI|1117|*":0.9,"PRI|1319|*":1.62,"PRI|*|*":0.72,"POS|1117|*":0.9,"POS|1319|*":1.62,"POS|1824|*":23.99,"POS|2436|*":29.99,"POS|*|*":0.9,"BKM|BM26|*":0.5,"BKM|BM27|*":0.34,"BKM|*|*":0.5},"addon":{"TEE":0.9,"SWE":1.1,"HOO":1.1,"HHO":1.1,"ZIP":1.1,"LSH":0.9,"TTO":0.9,"JAK":1.2,"HAT":0.9,"TOT":0.8},"price":{"3MP|*":28,"BUC|*":34,"CMP|*":40,"CNP|*":24,"DRB|*":26,"HAT|*":26,"HHO|*":72,"HOO|*":58,"HOO|2XL":60,"HOO|3XL":62,"JAK|*":85,"LAN|*":12,"LSH|*":34,"MOU|*":18,"PCC|*":16,"SCF|*":24,"SWE|*":42,"TEE|*":28,"TEE|2XL":30,"TEE|3XL":32,"TOT|*":22,"TTO|*":26,"ZIP|*":68,"ZPB|*":14,"ACK|*":12,"ACK|1.5IN":10,"ACK|1IN":8,"ACK|2.5IN":13,"ACK|2IN":12,"ACK|3.5IN":15,"ACK|3IN":14,"ACK|4IN":16,"ACP|*":12,"ACS|*":24,"BDR|*":11,"BRC|*":16,"BUT|*":4,"BUT|1.25":3,"BUT|2.25":4,"BUT|3.25":5,"EAR|*":18,"EPH|*":13,"EPS|*":12,"HRC|*":12,"HRT|*":14,"MTK|*":12,"NCK|*":16,"PAT|*":10,"PGR|*":13,"PHC|*":22,"PLK|*":24,"PST|*":14,"PVC|*":12,"QSD|*":22,"SHK|*":18,"WDK|*":9,"WPI|*":12,"BCD|*":15,"BKM|*":5,"BOO|*":20,"CRD|*":30,"GRC|*":6,"LEN|*":10,"MEM|*":8,"NTB|*":18,"PEE|*":6,"POS|*":18,"PRI|*":12,"PUF|*":6,"SBK|*":14,"SHI|*":20,"SSH|*":9,"STI|*":4,"STN|*":7,"SUN|*":7,"TCG|*":6,"WAS|*":10,"3DM|*":40,"PLU|*":42,"BLK|*":45,"COA|*":14,"DAK|*":55,"FMG|*":13,"PIL|*":32,"SLM|*":14,"TAP|*":38,"BRU|*":12,"TUT|*":20},"vendor":{"TEE":"T-Shirt Wholesaler","SWE":"T-Shirt Wholesaler","HOO":"T-Shirt Wholesaler","HHO":"T-Shirt Wholesaler","ZIP":"T-Shirt Wholesaler","LSH":"T-Shirt Wholesaler","TTO":"T-Shirt Wholesaler","JAK":"T-Shirt Wholesaler","HAT":"T-Shirt Wholesaler","STI":"StickerApp","PEE":"StickerApp","SUN":"StickerApp","PUF":"StickerApp","SSH":"StickerApp","PRI":"Printkeg","POS":"Printkeg","BKM":"Printkeg","GRC":"Printkeg","BCD":"Printkeg","NTB":"Printkeg","BOO":"Printkeg","BRU":"Digital","TUT":"Digital"}};
 const SIZEBYSUB={"HAT":[["\u2014 (no size)","\u2014 (no size)"]],"MOU":[["Mousepad Small","S"],["Mousepad Large","L"],["Desk Mat 1","DM1"],["Desk Mat 2","DM2"],["Desk Mat 3","DM3"]],"HOO":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"SBK":[["\u2014 (no size)","\u2014 (no size)"]],"BOO":[["\u2014 (no size)","\u2014 (no size)"]],"TCG":[["Trading Card","TC"],["Tarot","TR"]],"PST":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"SLM":[["\u2014 (no size)","\u2014 (no size)"]],"BRU":[["\u2014 (no size)","\u2014 (no size)"]],"GRC":[["\u2014 (no size)","\u2014 (no size)"]],"JAK":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"WPI":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"PEE":[["Sticker 2x2 in","2IN"],["Sticker 3x3 in","3IN"],["Sticker 4x4 in","4IN"],["Sticker 5x5 in","5IN"],["Sticker 6x6 in","6IN"]],"LSH":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"PAT":[["\u2014 (no size)","\u2014 (no size)"]],"PIL":[["Pillow Small","PSM"],["Pillow Medium","PMD"],["Pillow Large","PLG"]],"LEN":[["Trading Card","TC"],["Tarot","TR"]],"BUT":[["Button 1.25in","1.25"],["Button 2.25in","2.25"],["Button 3.25in","3.25"]],"CMP":[["\u2014 (no size)","\u2014 (no size)"]],"SHI":[["\u2014 (no size)","\u2014 (no size)"]],"NTB":[["\u2014 (no size)","\u2014 (no size)"]],"3DM":[["\u2014 (no size)","\u2014 (no size)"]],"3MP":[["Mousepad Small","S"],["Mousepad Large","L"],["Desk Mat 1","DM1"],["Desk Mat 2","DM2"],["Desk Mat 3","DM3"]],"PHC":[["\u2014 (no size)","\u2014 (no size)"]],"HRT":[["\u2014 (no size)","\u2014 (no size)"]],"ACP":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"ZIP":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"EAR":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"WDK":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"PUF":[["Sheet A6","A6"],["Sheet A5","A5"],["Sheet A4","A4"]],"ACS":[["\u2014 (no size)","\u2014 (no size)"]],"TUT":[["\u2014 (no size)","\u2014 (no size)"]],"PRI":[["Print 8x10 in","8X10"],["Print 11x14 in","1114"],["Print 11x17 in","1117"],["Print 13x19 in","1319"],["Poster 18x24 in","1824"],["Poster 24x36 in","2436"]],"SSH":[["Sheet A6","A6"],["Sheet A5","A5"],["Sheet A4","A4"]],"TEE":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"STI":[["Sticker 2x2 in","2IN"],["Sticker 3x3 in","3IN"],["Sticker 4x4 in","4IN"],["Sticker 5x5 in","5IN"],["Sticker 6x6 in","6IN"]],"ACK":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"SHK":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"BCD":[["\u2014 (no size)","\u2014 (no size)"]],"TOT":[["\u2014 (no size)","\u2014 (no size)"]],"PLU":[["Plush 7.5cm","P08"],["Plush 10cm","P10"],["Plush 15cm","P15"],["Plush 20cm","P20"]],"COA":[["\u2014 (no size)","\u2014 (no size)"]],"PCC":[["\u2014 (no size)","\u2014 (no size)"]],"QSD":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"EPH":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"]],"SWE":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"PLK":[["\u2014 (no size)","\u2014 (no size)"]],"WAS":[["Washi 10mm","W10"],["Washi 15mm","W15"],["Washi 30mm","W30"]],"BRC":[["\u2014 (no size)","\u2014 (no size)"]],"SUN":[["Sticker 2x2 in","2IN"],["Sticker 3x3 in","3IN"],["Sticker 4x4 in","4IN"],["Sticker 5x5 in","5IN"],["Sticker 6x6 in","6IN"]],"DRB":[["\u2014 (no size)","\u2014 (no size)"]],"STN":[["\u2014 (no size)","\u2014 (no size)"]],"EPS":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"]],"BUC":[["\u2014 (no size)","\u2014 (no size)"]],"PVC":[["\u2014 (no size)","\u2014 (no size)"]],"PGR":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"NCK":[["\u2014 (no size)","\u2014 (no size)"]],"POS":[["Print 8x10 in","8X10"],["Print 11x14 in","1114"],["Print 11x17 in","1117"],["Print 13x19 in","1319"],["Poster 18x24 in","1824"],["Poster 24x36 in","2436"]],"BKM":[["\u2014 (no size)","\u2014 (no size)"]],"TTO":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"FMG":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"BDR":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"ZPB":[["\u2014 (no size)","\u2014 (no size)"]],"CNP":[["\u2014 (no size)","\u2014 (no size)"]],"SCF":[["\u2014 (no size)","\u2014 (no size)"]],"MTK":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"]],"HRC":[["1 inch","1IN"],["1.5 inch","1.5IN"],["2 inch","2IN"],["2.5 inch","2.5IN"],["3 inch","3IN"],["3.5 inch","3.5IN"],["4 inch","4IN"]],"DAK":[["Daki 40x120","DK1"],["Daki 45x120","DK2"],["Daki 50x150","DK3"],["Daki 50x160","DK4"],["Daki 50x180","DK5"],["Daki 60x180","DK6"]],"MEM":[["\u2014 (no size)","\u2014 (no size)"]],"CRD":[["Trading Card","TC"],["Tarot","TR"]],"BLK":[["Blanket 75x100","BLS"],["Blanket 120x150","BLM"],["Blanket 150x200","BLL"]],"TAP":[["\u2014 (no size)","\u2014 (no size)"]],"HHO":[["Extra Small","XS"],["Small","S"],["Medium","M"],["Large","L"],["Extra Large","XL"],["2X Large","2XL"],["3X Large","3XL"]],"LAN":[["\u2014 (no size)","\u2014 (no size)"]]};
 const FINBYSUB={"HAT":[["\u2014 (none)",""]],"MOU":[["\u2014 (none)",""]],"HOO":[["\u2014 (none)",""]],"SBK":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"BOO":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"TCG":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"PST":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"SLM":[["\u2014 (none)",""]],"BRU":[["\u2014 (none)",""]],"GRC":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"JAK":[["\u2014 (none)",""]],"WPI":[["Natural","NAT"],["Cherry","CHY"],["Ashwood","ASH"],["Basswood","BAS"],["Whitewood","WHW"]],"PEE":[["Vinyl","VNL"],["Holographic","HOL"],["Clear","CLR"],["Glitter","GLI"],["Mirror","MIR"],["Frosted","FRO"],["Textured","TEX"],["Matte","MAT"],["Foil / Hot Stamp","FOI"],["Prismatic","PRS"],["Kraft","KFT"]],"LSH":[["\u2014 (none)",""]],"PAT":[["\u2014 (none)",""]],"PIL":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"LEN":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"BUT":[["Glossy","GLS"],["Matte","MAT"],["Holographic","HOL"],["Glitter","GLI"]],"CMP":[["\u2014 (none)",""]],"SHI":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"NTB":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"3DM":[["\u2014 (none)",""]],"3MP":[["\u2014 (none)",""]],"PHC":[["\u2014 (none)",""]],"HRT":[["\u2014 (none)",""]],"ACP":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"ZIP":[["\u2014 (none)",""]],"EAR":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"WDK":[["Natural","NAT"],["Cherry","CHY"],["Ashwood","ASH"],["Basswood","BAS"],["Whitewood","WHW"]],"PUF":[["Vinyl","VNL"],["Holographic","HOL"],["Clear","CLR"],["Glitter","GLI"],["Mirror","MIR"],["Frosted","FRO"],["Textured","TEX"],["Matte","MAT"],["Foil / Hot Stamp","FOI"],["Prismatic","PRS"],["Kraft","KFT"]],"ACS":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"TUT":[["\u2014 (none)",""]],"PRI":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"SSH":[["Vinyl","VNL"],["Holographic","HOL"],["Clear","CLR"],["Glitter","GLI"],["Mirror","MIR"],["Frosted","FRO"],["Textured","TEX"],["Matte","MAT"],["Foil / Hot Stamp","FOI"],["Prismatic","PRS"],["Kraft","KFT"]],"TEE":[["\u2014 (none)",""]],"STI":[["Vinyl","VNL"],["Holographic","HOL"],["Clear","CLR"],["Glitter","GLI"],["Mirror","MIR"],["Frosted","FRO"],["Textured","TEX"],["Matte","MAT"],["Foil / Hot Stamp","FOI"],["Prismatic","PRS"],["Kraft","KFT"]],"ACK":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"SHK":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"BCD":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"TOT":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"PLU":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"COA":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"PCC":[["\u2014 (none)",""]],"QSD":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"EPH":[["Hard Enamel","HEN"],["Soft Enamel","SEN"],["Glitter","GLI"],["Glow in Dark","GLW"],["Gold","GLD"],["Silver","SLV"],["Black Nickel","BNK"]],"SWE":[["\u2014 (none)",""]],"PLK":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"WAS":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"BRC":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"SUN":[["Vinyl","VNL"],["Holographic","HOL"],["Clear","CLR"],["Glitter","GLI"],["Mirror","MIR"],["Frosted","FRO"],["Textured","TEX"],["Matte","MAT"],["Foil / Hot Stamp","FOI"],["Prismatic","PRS"],["Kraft","KFT"]],"DRB":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"STN":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"EPS":[["Hard Enamel","HEN"],["Soft Enamel","SEN"],["Glitter","GLI"],["Glow in Dark","GLW"],["Gold","GLD"],["Silver","SLV"],["Black Nickel","BNK"]],"BUC":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"PVC":[["\u2014 (none)",""]],"PGR":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"NCK":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"POS":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"BKM":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"TTO":[["\u2014 (none)",""]],"FMG":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"BDR":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"ZPB":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"CNP":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"SCF":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"MTK":[["Hard Enamel","HEN"],["Soft Enamel","SEN"],["Glitter","GLI"],["Glow in Dark","GLW"],["Gold","GLD"],["Silver","SLV"],["Black Nickel","BNK"]],"HRC":[["Clear","CLR"],["Front Epoxy","EPX"],["Double Epoxy","DEP"],["Glitter Epoxy","GEP"],["Holographic","HOL"],["Double Holographic","DHO"],["Glitter","GLI"],["Rainbow","RNB"],["Mirror","MIR"],["Frosted","FRO"],["Glow in Dark","GLW"],["Pearl","PRL"],["Foil / Hot Stamp","FOI"],["Full Bleed","FBL"],["Black","BLK"],["White","WHT"],["Red","RED"],["Blue","BLU"],["Green","GRN"],["Pink","PIN"]],"DAK":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"MEM":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"CRD":[["Matte","MAT"],["Glossy","GLS"],["Holographic","HOL"],["Foil / Hot Stamp","FOI"],["Pearlescent","PRC"],["Linen","LIN"]],"BLK":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"TAP":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]],"HHO":[["\u2014 (none)",""]],"LAN":[["Multicolor","MUL"],["Standard","STD"],["Black","BLK"],["White","WHT"]]};
@@ -1387,7 +1980,7 @@ function setVendors(str){ var parts=(str||'').split('+').map(function(s){return 
   const gArtist=$('gArtist'),gCategory=$('gCategory'),gProduct=$('gProduct'),gDesign=$('gDesign'),gNum=$('gNum'),gFinish=$('gFinish');
   const sizeSel=$('size'),sizeCustom=$('sizeCustom'),skuI=$('sku'),costI=$('cost'),priceI=$('price'),weightI=$('weight'),titleI=$('title');
   const APPAREL=['TEE','SWE','HOO','HHO','ZIP','LSH','TTO','JAK','HAT'];
-  const CATNAMES={APP:'Apparel / Soft Objects',ACC:'Accessories (2-2.5D)',PRI:'Printed 2D','3D':'Models / Plushies 3D',HOM:'Home & Living',DIG:'Digital'};
+  const CATNAMES=window.DA_CATNAMES;
   function vendorsFor(sub){ return APPAREL.indexOf(sub)>=0 ? 'T-Shirt Wholesaler + Supacolor' : (BUILDER.vendor[sub]||'Vograce'); }
   function opt(sel,val,txt){const o=document.createElement('option');o.value=val;o.textContent=txt;sel.appendChild(o);}
   opt(gArtist,'','- artist -'); BUILDER.artists.forEach(a=>opt(gArtist,a[1],a[0]));
@@ -1717,7 +2310,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
 <script>
 /* ===================== Design -> Products batch panel ===================== */
 (function(){
-  var CATNAMES={APP:'Apparel / Soft Objects',ACC:'Accessories (2-2.5D)',PRI:'Printed 2D','3D':'Models / Plushies 3D',HOM:'Home & Living',DIG:'Digital'};
+  var CATNAMES=window.DA_CATNAMES;
   var APPAREL=['TEE','SWE','HOO','HHO','ZIP','LSH','TTO','JAK','HAT'];
   var pendingImg=null;
   var bSelected={};
@@ -2005,7 +2598,7 @@ function daStageActions(it){
   if(mgr){
     if(st==='submitted'||st==='changes_requested'){
       if(st==='changes_requested' && it.statusNote) h+='<span class="hint" style="font-size:11px;display:block;margin-bottom:3px;">note: '+esc(it.statusNote)+'</span>';
-      h+='<button class="btn sm" style="background:var(--accent2);color:#04121f;" onclick="daSendMockup(\''+it.id+'\')">Verify + send mockup</button>';
+      h+='<button class="btn sm" style="background:var(--da-fill);color:var(--da-on-fill);" onclick="daSendMockup(\''+it.id+'\')">Verify + send mockup</button>';
     } else if(st==='mockup_sent'){ h+='<span class="hint" style="font-size:11px;">awaiting artist approval</span>'; }
     else if(st==='approved'){ h+='<button class="btn sm" style="background:var(--good);color:#04121f;" onclick="daSendToProduction(\''+it.id+'\')">Send to production</button>'; }
   } else if(mine){
@@ -2053,14 +2646,37 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
 };
 </script>
 <script>
+  /* 'manager' was the old combined Product Manager tab. It split into
+     Manifest (the list) and Ingest (the SKU builder); anything still asking
+     for it wants the list. */
+  var DA_TAB_ALIAS = { manager:'manifest' };
+
   function switchTab(name){
+    name = DA_TAB_ALIAS[name] || name;
     document.querySelectorAll('.tabpanel').forEach(function(p){ p.classList.toggle('active', p.id==='tab-'+name); });
-    document.querySelectorAll('.tabbtn').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name); });
+    document.querySelectorAll('.danav__item').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-tab')===name); });
     try{ localStorage.setItem('daTab', name); }catch(e){}
+    daToggleMore(false);
     if(name==='artists' && window.daRenderArtists){ window.daRenderArtists(); }
     if(name==='documents' && window.daRenderMyDocs){ window.daRenderMyDocs(); }
+    if(name==='vault' && window.daRenderVault){ window.daRenderVault(); }
+    if(name==='gate' && window.daRenderGate){ window.daRenderGate(); }
+    if(name==='codex' && window.daRenderCodex){ window.daRenderCodex(); }
     window.scrollTo(0,0);
   }
+
+  /* More: the secondary destinations. Pass false to force-close. */
+  function daToggleMore(force){
+    var sheet=document.getElementById('daMoreSheet'),
+        scrim=document.getElementById('daMoreScrim'),
+        btn=document.getElementById('daMoreBtn');
+    if(!sheet) return;
+    var open = (force===undefined) ? sheet.hidden : !!force;
+    sheet.hidden = !open; scrim.hidden = !open;
+    if(btn) btn.setAttribute('aria-expanded', open?'true':'false');
+  }
+  window.daToggleMore = daToggleMore;
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') daToggleMore(false); });
   function tdl(id,ext){
     var url=id+"."+ext;
     fetch(url,{method:"HEAD"}).then(function(r){
@@ -2138,7 +2754,10 @@ function daRenderRequests(){
   reqs.forEach(function(x){ var s=x.status||'pending'; if(counts[s]!=null) counts[s]++; });
   var pend=counts.pending;
   var cnt=document.getElementById('reqCount'); if(cnt){ cnt.textContent=pend?(pend+' pending'):'none pending'; cnt.className='pill '+(pend?'warn':'good'); }
-  var tabc=document.getElementById('reqTabCount'); if(tabc){ if(pend){ tabc.textContent=pend; tabc.style.display=''; } else { tabc.style.display='none'; } }
+  var tabc=document.getElementById('daAppsCount');
+  if(tabc){ tabc.textContent=pend; tabc.hidden=!pend; }
+  var dot=document.getElementById('daMoreDot');
+  if(dot && pend) dot.hidden=false;
   if(!reqs.length){ list.innerHTML='<p class="sub" style="margin:8px 0;">No applications yet.</p>'; return; }
   var filter=window.daReqFilter||'all';
   function fbtn(key,label){ var n=(key==='all'?counts.all:counts[key]); return '<button class="req-filter'+(filter===key?' on':'')+'" onclick="daSetReqFilter(\''+key+'\')">'+label+' ('+n+')</button>'; }
@@ -2674,6 +3293,438 @@ window.daRenderAllArtistDocs=function(){
   }).join('');
   box.innerHTML='<p class="sub" style="margin:0 0 10px;"><b>'+fully+'</b> of '+profs.length+' artists fully signed &amp; verified.</p>'+html;
 };
+</script>
+<script>
+/* =====================================================================
+   The Vault, the Gate and the Codex.
+
+   Vocabulary note: the handoff's design record is one row per *design*
+   (a base SKU) with variants hanging off it, while this app stores one
+   row per *variant*. Everything below groups `items` by base SKU so the
+   two models line up without changing the products table.
+   ===================================================================== */
+(function(){
+
+  var STAGES = [
+    {code:'WIP',  label:'Concept / WIP',   tok:'--da-st-wip'},
+    {code:'SRC',  label:'Source received', tok:'--da-st-src'},
+    {code:'MOK',  label:'Mockups done',    tok:'--da-st-mok'},
+    {code:'RDY',  label:'Ready to list',   tok:'--da-st-rdy'},
+    {code:'LIVE', label:'Live',            tok:'--da-st-live'},
+    {code:'HLD',  label:'On hold',         tok:'--da-st-hold'}
+  ];
+  window.DA_STAGES = STAGES;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function allItems(){ return (typeof items!=='undefined' && items) ? items : []; }
+
+  /* Base SKU = ARTIST-CAT-SUB-DESIGN-NN, i.e. the SKU without its finish
+     and size segments. Names the folder; immutable, never reused. */
+  function baseSkuOf(it){
+    if(it.artistCode && it.category && it.sub && it.designCode && it.num!=null){
+      return [it.artistCode, it.category, it.sub, it.designCode,
+              String(parseInt(it.num)||1).padStart(2,'0')].join('-');
+    }
+    return (it.sku||'').split('-').slice(0,5).join('-') || (it.sku||'');
+  }
+  window.daBaseSkuOf = baseSkuOf;
+
+  /* One design = every variant sharing a base SKU. */
+  function designs(){
+    var by = {};
+    allItems().forEach(function(it){
+      var b = baseSkuOf(it); if(!b) return;
+      if(!by[b]) by[b] = {baseSku:b, items:[], artist:window.daArtistCodeOf(it),
+                          title:it.title||'', collection:it.designCode||'',
+                          category:it.category||'', sub:it.sub||'', vendor:it.vendor||''};
+      by[b].items.push(it);
+      if(!by[b].title && it.title) by[b].title = it.title;
+    });
+    return Object.keys(by).map(function(k){ var d=by[k]; d.stage=stageOf(d); return d; });
+  }
+  window.daDesigns = designs;
+
+  /* Pipeline stage, derived from the variant rows.
+
+     The handoff also specifies a Print-ready flag between Source and
+     Mockups. The products table has no column for it, so that step is not
+     represented here rather than guessed at — see PRINT-READY in the
+     commit message. */
+  function stageOf(d){
+    var its = d.items;
+    var any = function(f){ return its.some(f); };
+    if(any(function(i){ return i.status==='changes_requested'; })) return 'HLD';
+    if(any(function(i){ return i.status==='in_production'; }))     return 'LIVE';
+    if(its.length && its.every(function(i){ return i.managerApproved && i.artistApproved; })) return 'RDY';
+    if(any(function(i){ return i.mockupUrl; }))                    return 'MOK';
+    if(any(function(i){ return i.hasImg || i.imgUrl; }))           return 'SRC';
+    return 'WIP';
+  }
+  window.daStageOf = stageOf;
+
+  function stageMeta(code){
+    return STAGES.filter(function(s){ return s.code===code; })[0] || STAGES[0];
+  }
+  window.daStagePill = function(code){
+    var m = stageMeta(code);
+    return '<span class="da-status" data-st="'+m.code+'">'+m.code+'</span>';
+  };
+
+  /* ---- The gate rule ----------------------------------------------------
+     canList = contributor signed AND (IP warranty OR a commission agreement).
+     This app's document keys are agreement / ip / payment / nda, so
+     contributor maps to `agreement` and the IP warranty to `ip`. A document
+     counts only when the artist signed, the company signed and it is
+     verified — the same bar daDocsPending already uses.
+     Evaluated on every read, never cached. */
+  var GATE_DOCS = [
+    {key:'agreement', label:'Artist Agreement'},
+    {key:'ip',        label:'IP / Licensing Agreement'}
+  ];
+  window.DA_GATE_DOCS = GATE_DOCS;
+
+  function docOk(code, key){
+    var r = (typeof daDocRow==='function') ? daDocRow(code, key) : null;
+    return !!(r && r.artist_signed && r.company_signed && r.verified);
+  }
+  window.daGateMissing = function(code){
+    return GATE_DOCS.filter(function(d){ return !docOk(code, d.key); });
+  };
+  window.daCanList = function(code){ return window.daGateMissing(code).length === 0; };
+
+  function artistName(code){
+    var m = (window.daArtistMeta||{})[code] || {};
+    if(m.display_name) return m.display_name;
+    var b = (window.daArtistBuckets ? window.daArtistBuckets() : [])
+              .filter(function(p){ return (p.artist_code||'')===code; })[0];
+    return (b && b.display_name) || code;
+  }
+  window.daArtistName = artistName;
+
+  function money(n){ return '$'+(Number(n)||0).toFixed(2); }
+
+  /* ---- The Vault ------------------------------------------------------ */
+  window.daRenderVault = function(){
+    if(!document.getElementById('tab-vault')) return;
+    var ds = designs();
+
+    var dEl = document.getElementById('vaultDate');
+    if(dEl) dEl.textContent = new Date().toLocaleDateString(undefined,
+      {weekday:'long', day:'numeric', month:'long'});
+
+    /* Gate alert — red when designs are held, green when nothing is. */
+    var blocked = ds.filter(function(d){ return !window.daCanList(d.artist); });
+    var codes = {}; blocked.forEach(function(d){ codes[d.artist]=1; });
+    var nCodes = Object.keys(codes).length;
+    var gate = document.getElementById('vaultGate');
+    if(gate){
+      gate.innerHTML = blocked.length
+        ? '<button class="gate-alert" onclick="switchTab(\'gate\')">'
+          + '<span class="gate-alert__ico">⚠️</span><span>'
+          + '<b>'+blocked.length+' design'+(blocked.length===1?'':'s')+' held at the Gate</b>'
+          + '<i>Missing paperwork for '+nCodes+' artist'+(nCodes===1?'':'s')
+          + '. Nothing lists until it is signed and verified.</i></span></button>'
+        : '<div class="gate-alert clear"><span class="gate-alert__ico">✓</span><span>'
+          + '<b>Gate’s clear</b><i>Every artist with designs has their paperwork on file.</i>'
+          + '</span></div>';
+    }
+
+    /* The line — one chip per stage, tap to filter the Manifest. */
+    var line = document.getElementById('vaultLine');
+    if(line){
+      line.innerHTML = STAGES.map(function(s){
+        var n = ds.filter(function(d){ return d.stage===s.code; }).length;
+        return '<button class="line-chip" style="--st:var('+s.tok+');" '
+             + 'onclick="daFilterManifest(\''+s.code+'\')">'
+             + '<span class="n">'+n+'</span><span class="l">'+esc(s.label)+'</span></button>';
+      }).join('');
+    }
+
+    /* Needs you today — gaps, derived on read, stored nowhere. */
+    var needs = [];
+    ds.forEach(function(d){
+      if(d.stage==='RDY' && !window.daCanList(d.artist))
+        needs.push([d, 'Ready to list, but the paperwork is not signed']);
+      else if(d.stage==='SRC')
+        needs.push([d, 'Source is in — mockups still missing']);
+      else if(d.stage==='HLD')
+        needs.push([d, 'On hold — changes were requested']);
+    });
+    needs = needs.slice(0,4);
+    var nEl = document.getElementById('vaultNeeds');
+    if(nEl){
+      nEl.innerHTML = needs.length ? needs.map(function(p){
+        var d=p[0];
+        return '<button class="da-row da-a-'+esc(d.artist)+'" onclick="daOpenDesign(\''+esc(d.baseSku)+'\')">'
+             + '<span class="da-row__tint"></span><span class="da-row__body">'
+             + '<b>'+esc(d.title||d.baseSku)+'</b>'
+             + '<i>'+esc(p[1])+'</i></span>'
+             + '<span class="da-row__end">'+window.daStagePill(d.stage)+'</span></button>';
+      }).join('')
+      : '<div class="da-empty"><b>Nothing needs you</b>No gaps in the pipeline right now.</div>';
+    }
+
+    /* Potential artist earnings per artist. This is what the current
+       catalogue would pay out at full sell-through — the app has no
+       payments table, so it is not "owed to date". */
+    var pot = {};
+    allItems().forEach(function(it){
+      var c = window.daArtistCodeOf(it); if(!c) return;
+      pot[c] = (pot[c]||0) + ((typeof artistEarn==='function' ? artistEarn(it) : 0) * (parseInt(it.qty)||0));
+    });
+    var pEl = document.getElementById('vaultPayouts');
+    if(pEl){
+      var rows = Object.keys(pot).filter(function(c){ return pot[c]>0; })
+                   .sort(function(a,b){ return pot[b]-pot[a]; });
+      pEl.innerHTML = rows.length ? rows.map(function(c){
+        return '<button class="da-row da-a-'+esc(c)+'" onclick="switchTab(\'artists\')">'
+             + '<span class="da-row__tint"></span><span class="da-row__body">'
+             + '<b>'+esc(artistName(c))+'</b><i>'+esc(c)+' · on current stock</i></span>'
+             + '<span class="da-row__end"><span class="amt">'+money(pot[c])+'</span>potential</span></button>';
+      }).join('')
+      : '<div class="da-empty"><b>Nothing to pay out</b>Add stock and prices and this fills in.</div>';
+    }
+
+    var dot = document.getElementById('daMoreDot'),
+        gc  = document.getElementById('daGateCount');
+    if(dot) dot.hidden = !blocked.length;
+    if(gc){ gc.hidden = !blocked.length; gc.textContent = blocked.length; }
+  };
+
+  /* Jump to the Manifest filtered to one stage. */
+  window.daFilterManifest = function(code){
+    window.daStageFilter = code;
+    switchTab('manifest');
+    setSearch('');
+  };
+
+  /* Open a design: filter both the design list and the variant table to it,
+     so the master list below shows exactly that design's variants. */
+  window.daOpenDesign = function(baseSku){
+    window.daStageFilter = null;
+    window.daManifestFilter = 'all';
+    switchTab('manifest');
+    setSearch(baseSku);
+  };
+
+  function setSearch(v){
+    var a=document.getElementById('mfSearch'); if(a) a.value=v;
+    var b=document.getElementById('search');   if(b) b.value=v;
+    if(typeof render==='function') render();   /* render() calls daRenderManifest */
+    else if(window.daRenderManifest) window.daRenderManifest();
+  }
+
+  /* ---- The Gate ------------------------------------------------------- */
+  window.daRenderGate = function(){
+    if(!document.getElementById('tab-gate')) return;
+    var ds = designs();
+    var blocked = ds.filter(function(d){ return !window.daCanList(d.artist); });
+
+    var byArtist = {};
+    blocked.forEach(function(d){ (byArtist[d.artist] = byArtist[d.artist] || []).push(d); });
+    var codes = Object.keys(byArtist);
+
+    var hero = document.getElementById('gateHero');
+    if(hero){
+      hero.innerHTML = blocked.length
+        ? '<div class="vault-head"><div class="da-kicker">Hard stop</div>'
+          + '<h2 class="da-title">The Gate</h2></div>'
+          + '<div class="gate-alert" style="cursor:default;"><span class="gate-alert__ico">🔒</span>'
+          + '<span><b>'+blocked.length+' design'+(blocked.length===1?'':'s')+' blocked</b>'
+          + '<i>Across '+codes.length+' artist'+(codes.length===1?'':'s')+'.</i></span></div>'
+        : '<div class="vault-head"><div class="da-kicker">Hard stop</div>'
+          + '<h2 class="da-title">The Gate</h2></div>'
+          + '<div class="gate-alert clear"><span class="gate-alert__ico">✓</span>'
+          + '<span><b>Gate stands open</b><i>Every artist with designs has signed and verified paperwork.</i></span></div>';
+    }
+
+    var miss = document.getElementById('gateMissing');
+    if(miss){
+      miss.innerHTML = codes.length
+        ? '<div class="da-kicker" style="margin:var(--da-s-9) 0 var(--da-s-5);">Missing paperwork</div>'
+          + codes.map(function(c){
+              return window.daGateMissing(c).map(function(doc){
+                return '<div class="da-card da-a-'+esc(c)+'" style="padding:var(--da-s-7);margin-bottom:var(--da-s-4);">'
+                  + '<div style="display:flex;align-items:center;gap:var(--da-s-5);">'
+                  + '<span class="da-row__tint" style="height:34px;"></span>'
+                  + '<div style="flex:1;min-width:0;"><b style="font-size:14px;">'+esc(doc.label)+'</b>'
+                  + '<div class="hint" style="margin-top:3px;">'+esc(artistName(c))+' · '+esc(c)+'</div></div></div>'
+                  + '<div style="display:flex;gap:var(--da-s-3);margin-top:var(--da-s-5);flex-wrap:wrap;">'
+                  + '<button class="btn-grad" style="flex:1 1 150px;" onclick="switchTab(\'documents\')">Log signed</button>'
+                  + '<button class="btn ghost" style="flex:1 1 150px;" onclick="switchTab(\'templates\')">Send template</button>'
+                  + '</div></div>';
+              }).join('');
+            }).join('')
+        : '';
+    }
+
+    var bl = document.getElementById('gateBlocked');
+    if(bl){
+      bl.innerHTML = blocked.length
+        ? '<div class="da-kicker" style="margin:var(--da-s-9) 0 var(--da-s-5);">'
+          + blocked.length+' design'+(blocked.length===1?'':'s')+' waiting on it</div>'
+          + blocked.map(function(d){
+              return '<button class="da-row da-a-'+esc(d.artist)+'" onclick="daOpenDesign(\''+esc(d.baseSku)+'\')">'
+                + '<span class="da-row__tint"></span><span class="da-row__body">'
+                + '<b>'+esc(d.title||d.baseSku)+'</b>'
+                + '<i><span class="da-sku">'+esc(d.baseSku)+'</span></i></span>'
+                + '<span class="da-row__end">'+window.daStagePill(d.stage)+'</span></button>';
+            }).join('')
+        : '<div class="da-empty"><b>Nothing is waiting</b>Ingest a design and it will show up here if its paperwork is short.</div>';
+    }
+  };
+
+  /* ---- Codex ---------------------------------------------------------- */
+  window.daToggleTheme = function(){
+    var cur = document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light';
+    var next = cur==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('da_theme', next); }catch(e){}
+    daSyncThemeSwitch();
+  };
+  function daSyncThemeSwitch(){
+    var sw = document.getElementById('themeSwitch');
+    if(sw) sw.setAttribute('aria-checked',
+      document.documentElement.getAttribute('data-theme')==='dark' ? 'true':'false');
+  }
+
+  window.daRenderCodex = function(){
+    var box = document.getElementById('codexTables'); if(!box) return;
+    daSyncThemeSwitch();
+    var B = (typeof BUILDER!=='undefined') ? BUILDER : null;
+    if(!B){ box.innerHTML='<div class="da-empty">Reference tables are still loading.</div>'; return; }
+
+    var CAT = window.DA_CATNAMES || {};
+    var tables = [
+      ['Artists', ['Code','Name'], B.artists.map(function(a){ return [a[1], a[0]]; })],
+      ['Categories', ['Code','Name'], Object.keys(CAT).map(function(k){ return [k, CAT[k]]; })],
+      ['Products', ['Category','Code','Name'], B.products.map(function(p){
+          return [p[1], p[2], p[0].replace(/^[A-Z0-9]+ · [A-Z0-9]+ - /,'')]; })],
+      ['Collections', ['Code','Name'], B.designs.map(function(d){
+          return [d[1], d[0].replace(/^[A-Z0-9]+ - /,'')]; })],
+      ['Sizes', ['Code','Name'], B.sizes.map(function(s){ return [s[1], s[0]]; })],
+      ['Finishes', ['Code','Name'], B.finishes.map(function(f){ return [f[1], f[0]]; })]
+    ];
+
+    box.innerHTML = tables.map(function(t){
+      var name=t[0], cols=t[1], rows=t[2];
+      return '<div class="da-kicker" style="margin:0 0 var(--da-s-5);">'+esc(name)
+        + '<span class="codex-count">'+rows.length+'</span></div>'
+        + '<div class="codex-tbl"><div class="tablewrap"><table class="da-table"><thead><tr>'
+        + cols.map(function(c){ return '<th>'+esc(c)+'</th>'; }).join('')
+        + '</tr></thead><tbody>'
+        + rows.map(function(r){
+            return '<tr>' + r.map(function(cell,i){
+              /* every code is a SKU chip; the trailing column is the name */
+              return i < r.length-1
+                ? '<td class="code"><span class="da-sku">'+esc(cell)+'</span></td>'
+                : '<td>'+esc(cell)+'</td>';
+            }).join('') + '</tr>';
+          }).join('')
+        + '</tbody></table></div></div>';
+    }).join('');
+  };
+
+  /* ---- Manifest -------------------------------------------------------
+     Design-level rows: artist tint, title, SKU chip, status pill and the
+     three file dots. The variant-level master list stays below it as the
+     editing surface. */
+  var MF_FILTERS = [
+    {key:'all',    label:'All'},
+    {key:'locked', label:'Locked'},
+    {key:'live',   label:'Live'},
+    {key:'hold',   label:'On hold'}
+  ];
+  window.daManifestFilter = 'all';
+
+  window.daSetManifestFilter = function(key){
+    window.daManifestFilter = key;
+    window.daStageFilter = null;
+    daRenderManifest();
+  };
+
+  window.daRenderManifest = function(){
+    var list = document.getElementById('mfList'); if(!list) return;
+    var ds = designs();
+    var q  = ((document.getElementById('mfSearch')||{}).value||'').toLowerCase().trim();
+
+    /* Filter chips carry live counts so the bar doubles as a summary. */
+    var fEl = document.getElementById('mfFilters');
+    if(fEl){
+      fEl.className = 'line-chips mf-filters';
+      fEl.innerHTML = MF_FILTERS.map(function(f){
+        var n = ds.filter(function(d){ return matches(d, f.key); }).length;
+        var on = (window.daStageFilter ? false : window.daManifestFilter===f.key);
+        return '<button class="mf-chip'+(on?' on':'')+'" onclick="daSetManifestFilter(\''+f.key+'\')">'
+             + esc(f.label)+' '+n+'</button>';
+      }).join('')
+      + (window.daStageFilter
+          ? '<button class="mf-chip on" onclick="daSetManifestFilter(\'all\')">'
+            + esc(stageMeta(window.daStageFilter).label)+' ✕</button>'
+          : '');
+    }
+
+    var rows = ds.filter(function(d){
+      if(window.daStageFilter) { if(d.stage!==window.daStageFilter) return false; }
+      else if(!matches(d, window.daManifestFilter)) return false;
+      if(!q) return true;
+      return (d.baseSku+' '+d.title+' '+d.artist+' '+d.collection).toLowerCase().indexOf(q)>=0;
+    });
+
+    if(!rows.length){
+      list.innerHTML = '<div class="da-empty"><b>Nothing matches</b>'
+        + (q ? 'No design answers to “'+esc(q)+'”. Try the base SKU, or clear the search.'
+             : 'No designs under this filter yet — ingest one and it lands here.')
+        + '</div>';
+      return;
+    }
+
+    rows.sort(function(a,b){ return a.baseSku.localeCompare(b.baseSku); });
+    list.innerHTML = '<div class="mf-count">'+rows.length+' design'+(rows.length===1?'':'s')+'</div>'
+      + rows.map(function(d){
+          var locked = !window.daCanList(d.artist);
+          var hasSrc = d.items.some(function(i){ return i.hasImg || i.imgUrl; });
+          var hasMok = d.items.some(function(i){ return i.mockupUrl; });
+          return '<button class="da-row da-a-'+esc(d.artist)+'" onclick="daOpenDesign(\''+esc(d.baseSku)+'\')">'
+            + '<span class="da-row__tint"></span>'
+            + '<span class="da-row__body">'
+            + '<b>'+esc(d.title||d.baseSku)
+            + (locked?'<span class="mf-lock">LOCKED</span>':'')+'</b>'
+            + '<i><span class="da-sku">'+esc(d.baseSku)+'</span> '
+            + '<span class="mf-dots" title="source · print-ready · mockups">'
+            + '<span class="mf-dot'+(hasSrc?' on':'')+'"></span>'
+            + '<span class="mf-dot na" title="print-ready is not tracked yet"></span>'
+            + '<span class="mf-dot'+(hasMok?' on':'')+'"></span>'
+            + '</span> · '+d.items.length+' variant'+(d.items.length===1?'':'s')+'</i>'
+            + '</span>'
+            + '<span class="da-row__end">'+window.daStagePill(d.stage)+'</span></button>';
+        }).join('');
+  };
+
+  function matches(d, key){
+    if(key==='locked') return !window.daCanList(d.artist);
+    if(key==='live')   return d.stage==='LIVE';
+    if(key==='hold')   return d.stage==='HLD';
+    return true;
+  }
+
+  /* Keep the Vault honest whenever the catalogue changes underneath it. */
+  var _render = window.render;
+  window.daRefreshNew = function(){
+    if(document.getElementById('tab-vault') &&
+       document.getElementById('tab-vault').classList.contains('active')) window.daRenderVault();
+    if(document.getElementById('tab-gate') &&
+       document.getElementById('tab-gate').classList.contains('active')) window.daRenderGate();
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    daSyncThemeSwitch();
+    window.daRenderVault();
+    window.daRenderCodex();
+    window.daRenderManifest();
+  });
+})();
 </script>
 </body>
 </html>

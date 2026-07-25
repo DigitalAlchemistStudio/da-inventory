@@ -1,0 +1,200 @@
+/* Digital Alchemists — shared design tokens
+   One source of truth for the web portal AND the mobile apps.
+   Derived from the Design & Artist Intake handbook pages (00 - START HERE.html,
+   Design & Artist Intake - Handbook.html) so every surface matches the printed kit.
+   Web: import this file. Native: mirror these values into your theme object. */
+
+:root{
+  /* surfaces + text (day) */
+  --da-bg:#f5fafc;
+  --da-surface:#ffffff;
+  --da-surface-2:#eef8fc;
+  --da-ink:#0c2233;
+  --da-muted:#5a7183;
+  --da-line:#d9e7ef;
+  --da-chip:#e4f4fa;
+
+  /* brand */
+  --da-cyan-light:#93EBEE;
+  --da-cyan:#56CCDA;
+  --da-teal:#0E95BF;
+  --da-blue:#046BB5;
+  --da-navy:#043C8C;
+  --da-night-1:#04101f;
+  --da-night-2:#0a2c46;
+  --da-accent:var(--da-teal);          /* interactive colour, day */
+  --da-title:var(--da-navy);           /* display headings, day */
+  --da-kick:var(--da-blue);            /* uppercase section labels */
+  --da-grad:linear-gradient(135deg,#0E95BF 0%,#046BB5 55%,#043C8C 100%);
+  --da-night:linear-gradient(120deg,#04101f,#0a2c46);
+
+  /* SKU / code chip (from the handbook's <code> style) */
+  --da-code-bg:#e4f4fa;
+  --da-code-fg:#065a86;
+  --da-code-border:#cbeaf5;
+
+  /* callout (from the handbook's blockquote) */
+  --da-quote-bg:#e9f7fc;
+  --da-quote-fg:#0d4f6b;
+  --da-quote-rule:var(--da-cyan);
+
+  /* table header (from the handbook's th) */
+  --da-thead-bg:#046BB5;
+  --da-thead-fg:#ffffff;
+
+  /* semantic */
+  --da-danger:#E2564D;
+  --da-danger-text:#C13F37;
+  --da-warning:#E8A33D;
+  --da-success:#2FB37A;
+
+  /* pipeline status (day) */
+  --da-st-wip:#7C8FA3;
+  --da-st-src:#0E95BF;
+  --da-st-prt:#046BB5;
+  --da-st-mok:#56CCDA;
+  --da-st-rdy:#E8A33D;
+  --da-st-live:#2FB37A;
+  --da-st-hold:#8A93A3;
+
+  /* artist identity (day) */
+  --da-artist-wey:#046BB5;
+  --da-artist-pic:#0E95BF;
+  --da-artist-ink:#E2564D;
+  --da-artist-col:#043C8C;
+  --da-artist-da:#0a2c46;
+
+  /* type */
+  --da-font-display:'DA Display',cursive;          /* assets/da-display.woff2 */
+  --da-font-ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;
+  --da-font-ui-android:Roboto,system-ui,sans-serif;
+  --da-font-mono:'SF Mono',ui-monospace,Menlo,Consolas,monospace;
+
+  /* radius */
+  --da-r-pill:5px;
+  --da-r-chip:9px;
+  --da-r-control:13px;
+  --da-r-card:16px;
+  --da-r-card-lg:18px;
+  --da-r-sheet:26px;
+
+  /* space scale (px) */
+  --da-s-1:4px; --da-s-2:6px; --da-s-3:8px; --da-s-4:10px;
+  --da-s-5:12px; --da-s-6:14px; --da-s-7:16px; --da-s-8:18px;
+  --da-s-9:22px; --da-s-10:26px; --da-s-11:34px;
+
+  /* elevation — cards use a 1px line, not a shadow */
+  --da-shadow-sheet:0 -14px 44px rgba(4,16,31,.40);
+  --da-shadow-raised:0 8px 24px rgba(4,60,140,.35);
+}
+
+/* Night mode. Web portal: put data-theme="dark" on <html>. */
+[data-theme="dark"]{
+  --da-bg:#04101f;
+  --da-surface:#0a2237;
+  --da-surface-2:#0d2b44;
+  --da-ink:#eafbff;
+  --da-muted:#7fa8c0;
+  --da-line:#17405c;
+  --da-chip:#0e3350;
+  --da-accent:var(--da-cyan);
+  --da-title:var(--da-cyan-light);
+  --da-kick:#7fc7e8;
+  --da-code-bg:#0e3350;
+  --da-code-fg:#93EBEE;
+  --da-code-border:#1b5273;
+  --da-quote-bg:#0b2b42;
+  --da-quote-fg:#aee9ff;
+  --da-thead-bg:#0a3350;
+  --da-danger-text:#FF8A7E;
+  --da-success:#4FCB93;
+  --da-st-wip:#9FB6C8;
+  --da-st-src:#56CCDA;
+  --da-st-prt:#5AB6EE;
+  --da-st-mok:#93EBEE;
+  --da-st-rdy:#F2BB63;
+  --da-st-live:#4FCB93;
+  --da-st-hold:#A7B2C0;
+  --da-artist-wey:#5AB6EE;
+  --da-artist-pic:#56CCDA;
+  --da-artist-ink:#FF8A7E;
+  --da-artist-col:#8FB4F0;
+  --da-artist-da:#93EBEE;
+}
+
+@font-face{
+  font-family:'DA Display';
+  src:url(assets/da-display.woff2) format('woff2');
+  font-weight:400;
+  font-display:swap;
+}
+
+/* ---- the five components that must be identical on web and mobile ---- */
+
+/* 1. SKU chip — every SKU, everywhere, is monospace in a tinted chip */
+.da-sku{
+  font:400 11px/1.4 var(--da-font-mono);
+  color:var(--da-code-fg);
+  background:var(--da-code-bg);
+  border:1px solid var(--da-code-border);
+  border-radius:var(--da-r-pill);
+  padding:2px 5px;
+  display:inline-block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* 2. Status pill — 3-4 letter code, never the long label, in tight spaces */
+.da-status{
+  font:700 9px/1 var(--da-font-mono);
+  letter-spacing:.07em;
+  padding:3px 6px;
+  border-radius:var(--da-r-pill);
+  /* set background: color-mix(in srgb, var(--status) 15%, transparent); color: var(--status) */
+}
+
+/* 3. Section kicker — the handbook's h4 */
+.da-kicker{
+  font:600 11px/1 var(--da-font-ui);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--da-kick);
+}
+
+/* 4. Page/screen title — display face + 4px gradient rule (handbook h1::after) */
+.da-title{ font:400 clamp(24px,4vw,34px)/1.05 var(--da-font-display); color:var(--da-title); }
+.da-title::after{ content:""; display:block; height:4px; border-radius:3px; background:var(--da-grad); margin-top:7px; }
+
+/* 5. Callout — the handbook's blockquote */
+.da-callout{
+  font:400 12px/1.55 var(--da-font-ui);
+  color:var(--da-quote-fg);
+  background:var(--da-quote-bg);
+  border-left:4px solid var(--da-quote-rule);
+  border-radius:0 10px 10px 0;
+  padding:11px 13px;
+}
+
+/* Card: 1px line, no shadow. Never mix borders and shadows on the same card. */
+.da-card{
+  background:var(--da-surface);
+  border:1px solid var(--da-line);
+  border-radius:var(--da-r-card);
+}
+
+/* Table header (web portal tables) */
+.da-table thead th{
+  background:var(--da-thead-bg);
+  color:var(--da-thead-fg);
+  font:600 9px/1 var(--da-font-mono);
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  text-align:left;
+  padding:8px 14px;
+}
+
+/* App chrome — the navy banner from the handbook, used as top bar and tab bar */
+.da-chrome{ background:var(--da-night); border-bottom:3px solid var(--da-cyan); }
+.da-chrome__kick{ font:700 8px/1 var(--da-font-mono); letter-spacing:.22em; text-transform:uppercase; color:var(--da-cyan-light); }
