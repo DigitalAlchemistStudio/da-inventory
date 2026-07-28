@@ -939,7 +939,7 @@
     </div>
   </div>
   <div id="tab-artists" class="tabpanel">
-      <style>.asub-bar .asub-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px;}.asub-bar .asub-btn:hover{color:var(--text);background:var(--panel2);}.asub-bar .asub-btn.active{color:var(--cyan);border-bottom-color:var(--accent);}</style><div class="asub-bar" style="display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;"><button id="asubBtn-list" class="asub-btn active" onclick="daArtistsSub('list')">Artists</button><button id="asubBtn-arch" class="asub-btn mgr-only" onclick="daArtistsSub('arch')">Archived Artists</button></div>
+      <style>.asub-bar .asub-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px;}.asub-bar .asub-btn:hover{color:var(--text);background:var(--panel2);}.asub-bar .asub-btn.active{color:var(--cyan);border-bottom-color:var(--accent);}</style><div class="asub-bar" style="display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;"><button id="asubBtn-list" class="asub-btn active" onclick="daArtistsSub('list')">Artists</button><button id="asubBtn-arch" class="asub-btn mgr-only" onclick="daArtistsSub('arch')">Archived Artists</button><button id="asubBtn-special" class="asub-btn mgr-only" onclick="daArtistsSub('special')">Special accounts<span id="asubBtn-special-count"></span></button></div>
       <div id="asub-list" class="asub-panel">
     <div class="card">
       <h2>🎨 Artists</h2>
@@ -964,7 +964,8 @@
         <div id="rosterFilters" class="roster-filters"></div>
         <div id="rosterBox"><p class="sub">Loading&hellip;</p></div>
       </div></div>
-    </div>
+    <div id="asub-special" class="asub-panel mgr-only" style="display:none;"><div class="card"><h2>🧩 Special accounts</h2><p class="sub" style="margin:-6px 0 12px;">Utility accounts for testing, house / POD items, and collaborative works — kept separate from your artist roster. (COL, TST, DA, UNASSIGNED / POD)</p><div id="specialList"></div><p class="sub" id="specialEmpty">No special accounts.</p></div></div>
+      </div>
   <div id="tab-utilities" class="tabpanel">
   <div class="card mgr-only" style="border-color:var(--accent2);">
     <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
@@ -1449,16 +1450,42 @@ setTimeout(function(){ try{ var p=document.getElementById('tab-archived'); if(p 
 
 // ===== Artists tab subtabs =====
 window.daArtistsSub=function(which){
-  var list=document.getElementById('asub-list'), arch=document.getElementById('asub-arch');
-  var bl=document.getElementById('asubBtn-list'), ba=document.getElementById('asubBtn-arch');
-  if(!list||!arch) return;
-  var showArch = which==='arch';
-  list.style.display = showArch?'none':'';
-  arch.style.display = showArch?'':'none';
-  if(bl) bl.classList.toggle('active', !showArch);
-  if(ba) ba.classList.toggle('active', showArch);
-  if(showArch && window.daRenderRoster){ try{ window.daRenderRoster(); }catch(e){} }
+  var map={list:'asub-list', arch:'asub-arch', special:'asub-special'};
+  var btns={list:'asubBtn-list', arch:'asubBtn-arch', special:'asubBtn-special'};
+  Object.keys(map).forEach(function(k){
+    var pane=document.getElementById(map[k]); if(pane) pane.style.display=(k===which)?'':'none';
+    var b=document.getElementById(btns[k]); if(b) b.classList.toggle('active', k===which);
+  });
+  if(which==='arch' && window.daRenderRoster){ try{ window.daRenderRoster(); }catch(e){} }
+  if(which==='special'){ try{ daSplitSpecial(); }catch(e){} }
 };
+function daSplitSpecial(){
+  var list=document.getElementById('artistsList');
+  var holder=document.getElementById('specialList');
+  if(!list||!holder) return;
+  var special=window.daRosterSpecial||{};
+  holder.innerHTML='';
+  var cards=[].slice.call(list.querySelectorAll('.artist-card'));
+  var n=0;
+  cards.forEach(function(card){
+    var el=card.querySelector('.a-code');
+    var code=el? el.textContent.replace(/[^A-Za-z]/g,'').toUpperCase():'';
+    if(code && special[code]){ holder.appendChild(card); n++; }
+  });
+  var empty=document.getElementById('specialEmpty'); if(empty) empty.style.display=n?'none':'';
+  var cc=document.getElementById('asubBtn-special-count'); if(cc) cc.textContent=n?(' ('+n+')'):'';
+}
+if(!window.__daSplitWrapped){
+  window.__daSplitWrapped=true;
+  setTimeout(function(){
+    if(window.daRenderArtists && !window.daRenderArtists.__wrapped){
+      var _r=window.daRenderArtists;
+      window.daRenderArtists=function(){ var o=_r.apply(this,arguments); try{ daSplitSpecial(); }catch(e){} return o; };
+      window.daRenderArtists.__wrapped=true;
+    }
+    try{ daSplitSpecial(); }catch(e){}
+  }, 0);
+}
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
