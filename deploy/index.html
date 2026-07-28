@@ -2784,7 +2784,7 @@ window.daRenderAllArtistDocs=function(){
     var status=Number(x.refund)>0?'<span class="pill">Refunded</span>':(x.paid?'<span class="pill">Paid</span>':'<span class="pill warn">Unpaid</span>');
     var main='<tr>'
       +'<td>'+esc(x.order_name||x.shopify_order_id)+'</td>'
-      +'<td style="text-align:left;">'+esc(x.title||'')+'<div class="sub" style="font-size:11px;">'+esc(x.sku||'')+'</div></td>'
+      +'<td>'+esc(x.title||'')+'<div class="sub" style="font-size:11px;">'+esc(x.sku||'')+'</div></td>'
       +'<td>'+esc(x.artist_code||'—')+'</td>'
       +'<td class="num">'+(x.qty||0)+'</td>'
       +'<td class="num">'+money(x.net_revenue)+'</td>'
@@ -2799,12 +2799,12 @@ window.daRenderAllArtistDocs=function(){
           ? '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',false)">Undo</button>'
           : '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',true)">Mark paid</button>')+'</td>'
       +'</tr>';
-    var note=rs?'<tr><td colspan="13" style="padding:0 10px 8px;color:var(--muted);font-size:11.5px;border-top:none;">↳ '+esc(rs)+'</td></tr>':'';
+    var note=rs?'<tr><td colspan="13" style="padding:0 10px 8px;color:var(--muted);font-size:11.5px;border-top:none;text-align:center;">↳ '+esc(rs)+'</td></tr>':'';
     return main+note;
   }
   function mgrTable(list){
     return '<div class="tablewrap"><table><thead><tr>'
-      +'<th style="text-align:left;">Order</th><th style="text-align:left;">Item</th><th>Artist</th><th>Qty</th>'
+      +'<th>Order</th><th>Item</th><th>Artist</th><th>Qty</th>'
       +'<th class="num">Net</th><th class="num">Cost</th><th class="num">Fee</th><th class="num">Ship</th>'
       +'<th class="num">Profit</th><th class="num">Artist</th><th class="num">Business</th><th>Status</th><th></th>'
       +'</tr></thead><tbody>'+list.map(mgrRow).join('')+'</tbody></table></div>';
@@ -2816,14 +2816,14 @@ window.daRenderAllArtistDocs=function(){
       :(x.paid?'<span class="pill">Paid</span>':'<span class="pill warn">Pending</span>'));
     return '<tr>'
       +'<td>'+esc(x.order_name||x.shopify_order_id)+'</td>'
-      +'<td style="text-align:left;">'+esc(x.title||'')+(rs?'<div class="sub" style="font-size:11px;">'+esc(rs)+'</div>':'')+'</td>'
+      +'<td>'+esc(x.title||'')+(rs?'<div class="sub" style="font-size:11px;">'+esc(rs)+'</div>':'')+'</td>'
       +'<td class="num">'+(x.qty||0)+'</td>'
       +'<td class="num" style="color:var(--warn);font-weight:700;">'+money(x.artist_earn)+'</td>'
       +'<td>'+status+'</td>'
       +'</tr>';
   }
   function artTable(list){
-    return '<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Order</th><th style="text-align:left;">Item</th><th>Qty</th><th class="num">You earn</th><th>Status</th></tr></thead><tbody>'+list.map(artRow).join('')+'</tbody></table></div>';
+    return '<div class="tablewrap"><table><thead><tr><th>Order</th><th>Item</th><th>Qty</th><th class="num">You earn</th><th>Status</th></tr></thead><tbody>'+list.map(artRow).join('')+'</tbody></table></div>';
   }
 
   window.daRenderPayouts = function(){
