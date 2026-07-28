@@ -1481,14 +1481,19 @@ function daSplitSpecial(){
     if(!list){ setTimeout(attach, 400); return; }
     try{
       var mo=new MutationObserver(function(){
-        if(window.__splitting) return;
-        window.__splitting=true;
-        try{ daSplitSpecial(); }catch(e){}
-        window.__splitting=false;
-      });
-      mo.observe(list, {childList:true});
-    }catch(e){}
+  var mo=null;
+  function split(){
+    if(mo) mo.disconnect();
     try{ daSplitSpecial(); }catch(e){}
+    var list=document.getElementById('artistsList');
+    if(mo && list) mo.observe(list, {childList:true});
+  }
+  function attach(){
+    var list=document.getElementById('artistsList');
+    if(!list){ setTimeout(attach, 400); return; }
+    mo=new MutationObserver(split);
+    mo.observe(list, {childList:true});
+    split();
   }
   attach();
 })();
