@@ -1039,6 +1039,15 @@
     </div>
   </div>
   <div id="tab-payouts" class="tabpanel">
+      <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs)daRenderCollabs()" style="margin-bottom:22px;">
+        <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
+        <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <input id="collabNewSku" placeholder="Collab SKU (e.g. COL-STK-DRG-01)" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;">
+          <button class="btn ghost sm" onclick="daCollabAdd()">Add collab SKU</button>
+        </div>
+        <div id="collabBox"><p class="sub">Open to load&hellip;</p></div>
+      </details>
     <div class="card mgr-only" style="">
       <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
       <p class="sub" style="margin:-6px 0 12px;">Real earnings computed from Shopify orders: (price − discount − refund) − manufacture cost − fees − shipping, then split by each artist's rate. Mark rows paid once you've sent the money.</p>
@@ -1491,6 +1500,83 @@ function daSplitSpecial(){
   }
   boot();
 })();
+
+
+// ===== Collaborations manager =====
+window.daRenderCollabs = async function(){
+  var box=document.getElementById('collabBox'); if(!box) return;
+  if(!window.daSB){ box.innerHTML='<p class="sub">Not connected.</p>'; return; }
+  box.innerHTML='<p class="sub">Loading&hellip;</p>';
+  try{
+    var r=await window.daSB.from('collab_skus').select('*').order('sku');
+    if(r.error) throw r.error;
+    var rows=r.data||[];
+    var special=window.daRosterSpecial||{};
+    var meta=window.daArtistMeta||{};
+    var NAMES={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',DA:'Digital Alchemists'};
+    var cand={};
+    ['WEY','INK','PIC'].forEach(function(c){ cand[c]=1; });
+    Object.keys(meta).forEach(function(c){ c=String(c).toUpperCase(); if(!special[c]) cand[c]=1; });
+    var candList=Object.keys(cand).filter(function(c){ return !special[c]; }).sort();
+    function nm(c){ return NAMES[c]||(meta[c]&&(meta[c].display_name||meta[c].real_name))||c; }
+    if(!rows.length){ box.innerHTML='<p class="sub">No collaborations yet. Add a collab SKU above.</p>'; return; }
+    box.innerHTML=rows.map(function(row){
+      var codes=(row.artist_codes||[]).map(function(x){return String(x).toUpperCase();});
+      var chips=candList.map(function(c){
+        var on=codes.indexOf(c)>=0;
+        return '<label style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;margin:0 12px 6px 0;cursor:pointer;"><input type="checkbox" '+(on?'checked':'')+' data-collab-sku="'+esc(row.sku)+'" data-collab-code="'+c+'" style="width:auto;"> '+esc(nm(c))+'</label>';
+      }).join('');
+      var n=codes.length;
+      var eachTxt=n>=2?(' &middot; each gets 1/'+n+' of the pool'):' &middot; pick 2+ artists';
+      return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">'
+        +'<b class="a-code" style="font-size:13px;">'+esc(row.sku)+'</b>'
+        +'<span class="sub">'+n+' artist'+(n===1?'':'s')+eachTxt+'</span>'
+        +'<button class="btn danger sm" data-collab-del="'+esc(row.sku)+'">Remove</button></div>'
+        +'<div>'+chips+'</div></div>';
+    }).join('');
+    box.querySelectorAll('[data-collab-sku]').forEach(function(cb){
+      cb.addEventListener('change', function(){ daCollabToggle(cb.getAttribute('data-collab-sku'), cb.getAttribute('data-collab-code'), cb.checked); });
+    });
+    box.querySelectorAll('[data-collab-del]').forEach(function(b){
+      b.addEventListener('click', function(){ daCollabDelete(b.getAttribute('data-collab-del')); });
+    });
+  }catch(e){ box.innerHTML='<p class="sub" style="color:var(--bad)">Could not load: '+esc(String(e&&e.message||e))+'</p>'; }
+};
+async function daCollabAdd(){
+  var el=document.getElementById('collabNewSku'); var sku=(el&&el.value||'').trim();
+  if(!sku){ notify('Enter a SKU first.'); return; }
+  try{
+    var res=await window.daSB.from('collab_skus').upsert({sku:sku, artist_codes:[], updated_at:new Date().toISOString()}, {onConflict:'sku'});
+    if(res.error) throw res.error;
+    if(el) el.value='';
+    notify('Added '+sku+' — now tick the artists.');
+    window.daRenderCollabs();
+  }catch(e){ notify('Add failed: '+(e&&e.message||e)); }
+}
+async function daCollabToggle(sku, code, on){
+  code=String(code).toUpperCase();
+  try{
+    var r=await window.daSB.from('collab_skus').select('artist_codes').eq('sku',sku).maybeSingle();
+    if(r.error) throw r.error;
+    var codes=((r.data&&r.data.artist_codes)||[]).map(function(x){return String(x).toUpperCase();});
+    var i=codes.indexOf(code);
+    if(on && i<0) codes.push(code);
+    if(!on && i>=0) codes.splice(i,1);
+    var res=await window.daSB.from('collab_skus').update({artist_codes:codes, updated_at:new Date().toISOString()}).eq('sku',sku);
+    if(res.error) throw res.error;
+    window.daRenderCollabs();
+  }catch(e){ notify('Update failed: '+(e&&e.message||e)); window.daRenderCollabs(); }
+}
+async function daCollabDelete(sku){
+  if(!confirm('Remove collaboration mapping for '+sku+'?')) return;
+  try{
+    var res=await window.daSB.from('collab_skus').delete().eq('sku',sku);
+    if(res.error) throw res.error;
+    notify('Removed '+sku+'.');
+    window.daRenderCollabs();
+  }catch(e){ notify('Remove failed: '+(e&&e.message||e)); }
+}
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
