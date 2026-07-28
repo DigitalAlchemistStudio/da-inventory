@@ -354,14 +354,6 @@
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
     <span class="acct-chip" id="acctChip" style="display:none;"></span>
     <button class="btn ghost sm" id="signOutBtn" style="display:none;" onclick="daSignOut()">Sign out</button>
-    <button class="btn ghost sm mgr-only" onclick="document.getElementById('csvFile').click()">Import CSV</button>
-    <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(event)">
-    <button class="btn ghost sm mgr-only" onclick="exportCSV()">Export CSV</button>
-    <button class="btn ghost sm mgr-only" onclick="exportAllImages()">Export images</button>
-    <button class="btn ghost sm mgr-only" onclick="exportShopify()">Push → Shopify CSV</button>
-    <button class="btn ghost sm mgr-only" onclick="printBarcodes()">Print barcodes</button>
-    <button class="btn ghost sm mgr-only" onclick="loadDACatalog()">Load DA Catalog</button>
-    <button class="btn ghost sm mgr-only" onclick="loadDemo()">Load sample rows</button>
   </div>
 </header>
 
@@ -370,6 +362,7 @@
     <button class="tabbtn active" data-tab="manager" onclick="switchTab('manager')">Product Manager</button>
     <button class="tabbtn" data-tab="templates" onclick="switchTab('templates')">Templates / Resources</button>
     <button class="tabbtn" data-tab="documents" onclick="switchTab('documents')">Documents</button>
+    <button class="tabbtn" data-tab="payouts" onclick="switchTab('payouts')">Payouts</button>
     <button class="tabbtn mgr-only" data-tab="applications" onclick="switchTab('applications')">Applications <span id="reqTabCount" class="pill warn" style="font-size:10px;padding:1px 6px;display:none;">0</span></button>
     <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button>
     <button class="tabbtn mgr-only" data-tab="utilities" onclick="switchTab('utilities')">Utilities</button>
@@ -937,6 +930,20 @@
     </div>
   </div>
   <div id="tab-utilities" class="tabpanel">
+  <div class="card mgr-only" style="border-color:var(--accent2);">
+    <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
+    <p class="sub" style="margin:-6px 0 12px;">Import and export your catalog, push to Shopify, print barcodes, and load starter data — these used to sit in the top bar.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <button class="btn ghost sm mgr-only" onclick="document.getElementById('csvFile').click()">Import CSV</button>
+      <input type="file" id="csvFile" accept=".csv" style="display:none" onchange="importCSV(event)">
+      <button class="btn ghost sm mgr-only" onclick="exportCSV()">Export CSV</button>
+      <button class="btn ghost sm mgr-only" onclick="exportAllImages()">Export images</button>
+      <button class="btn ghost sm mgr-only" onclick="exportShopify()">Push → Shopify CSV</button>
+      <button class="btn ghost sm mgr-only" onclick="printBarcodes()">Print barcodes</button>
+      <button class="btn ghost sm mgr-only" onclick="loadDACatalog()">Load DA Catalog</button>
+      <button class="btn ghost sm mgr-only" onclick="loadDemo()">Load sample rows</button>
+    </div>
+  </div>
   <div class="card mgr-only" style="border-color:var(--accent);">
     <h2 style="display:flex;align-items:center;gap:8px;">🔄 Shopify Sync <span class="pill good" style="font-weight:600;">Shopify = source of truth</span></h2>
     <div style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:14px;">
@@ -983,10 +990,33 @@
   </div>
   </div>
   <div id="tab-documents" class="tabpanel">
+    <div class="card mgr-only">
+      <h2>🖋️ Artist contracts</h2>
+      <p class="sub" style="margin:-6px 0 12px;">Every artist and their signing status. Click an artist to view or manage each document.</p>
+      <div id="allArtistDocs"></div>
+    </div>
     <div class="card">
       <h2>📄 My documents</h2>
       <p class="sub" style="margin:-6px 0 12px;">Your agreements with Digital Alchemists and their signing status. Documents are managed by a manager — reach out if anything looks off.</p>
       <div id="myDocsList"></div>
+    </div>
+  </div>
+  <div id="tab-payouts" class="tabpanel">
+    <div class="card mgr-only" style="border-color:var(--warn);">
+      <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
+      <p class="sub" style="margin:-6px 0 12px;">Real earnings computed from Shopify orders: (price − discount − refund) − manufacture cost − fees − shipping, then split by each artist's rate. Mark rows paid once you've sent the money.</p>
+      <div id="payoutSummary" class="grid"></div>
+      <div style="display:flex;gap:8px;align-items:center;margin:14px 0 8px;flex-wrap:wrap;">
+        <span class="sub">Show:</span>
+        <button class="btn ghost sm" id="poFilterUnpaid" onclick="daPayoutFilter('unpaid')">Unpaid</button>
+        <button class="btn ghost sm" id="poFilterAll" onclick="daPayoutFilter('all')">All</button>
+      </div>
+      <div id="payoutTable"></div>
+    </div>
+    <div class="card">
+      <h2>💰 My earnings</h2>
+      <p class="sub" style="margin:-6px 0 12px;">Your share of the profit on every order that included your work. Amounts marked paid have already been sent to you.</p>
+      <div id="myPayouts"></div>
     </div>
   </div>
 </div>
@@ -1690,11 +1720,12 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
       if(prof.is_manager && window.daLoadRequests){ window.daLoadRequests(); }
       if(window.daLoadResources){ window.daLoadResources(); }
       if(window.daLoadDocs){ window.daLoadDocs(); }
+      if(window.daLoadPayouts){ window.daLoadPayouts(); }
         document.body.classList.toggle('not-manager', !prof.is_manager);
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
-        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles() ]);
+        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles(), window.daLoadArtistMeta() ]);
       });
-    }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); })
+    }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); if(window.daRenderAllArtistDocs) window.daRenderAllArtistDocs(); })
       .catch(function(e){ console.error('boot',e); });
   };
 
@@ -1936,12 +1967,22 @@ function daShareFor(it){
 function artistEarn(it){ var z=(Number(it.price)||0)-(Number(it.cost)||0); if(z<0)z=0; return z*daShareFor(it); }
 window.daLoadProfiles=function(){
   if(!window.daSB) return Promise.resolve();
-  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email').then(function(r){
+  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email,real_name').then(function(r){
     if(r.error){ console.error(r.error); return; }
     window.daProfilesAll=r.data||[];
     window.daShareMap={};
     window.daProfilesAll.forEach(function(p){ if(p.artist_code) window.daShareMap[(p.artist_code+'').toUpperCase()]=(p.artist_share!=null?p.artist_share:0.40); });
     if(window.daRenderRates) window.daRenderRates();
+    if(window.daRenderArtists) window.daRenderArtists();
+  });
+};
+window.daArtistMeta={};
+window.daLoadArtistMeta=function(){
+  if(!window.daSB) return Promise.resolve();
+  return window.daSB.from('artists').select('*').then(function(r){
+    if(r.error){ console.error('artists',r.error); return; }
+    window.daArtistMeta={};
+    (r.data||[]).forEach(function(a){ if(a.code) window.daArtistMeta[(a.code+'').toUpperCase()]={display_name:a.display_name||'',real_name:a.real_name||''}; });
     if(window.daRenderArtists) window.daRenderArtists();
   });
 };
@@ -2038,6 +2079,7 @@ window.daSendToProduction=function(id){ var it=_daItem(id); if(!it) return;
     try{ localStorage.setItem('daTab', name); }catch(e){}
     if(name==='artists' && window.daRenderArtists){ window.daRenderArtists(); }
     if(name==='documents' && window.daRenderMyDocs){ window.daRenderMyDocs(); }
+    if(name==='payouts' && window.daRenderPayouts){ window.daRenderPayouts(); }
     window.scrollTo(0,0);
   }
   function tdl(id,ext){
@@ -2365,7 +2407,7 @@ window.daArtistBuckets=function(){
     if(!code||!window.daIsArtistCode(code)){ hasUnassigned=true; return; }
     if(have[code]||seen[code]) return;
     seen[code]=true;
-    profs.push({id:null,artist_code:code,display_name:(NAMEMAP[code]||code),artist_share:0.40,email:'',noAccount:true});
+    var _meta=(window.daArtistMeta||{})[code]||{}; profs.push({id:null,artist_code:code,display_name:(_meta.display_name||NAMEMAP[code]||code),real_name:_meta.real_name||'',artist_share:0.40,email:'',noAccount:true});
   });
   profs.sort(function(a,b){ return (a.display_name||a.artist_code||'').localeCompare(b.display_name||b.artist_code||''); });
   if(hasUnassigned){ profs.push({id:null,artist_code:'UNASSIGNED',display_name:'Unassigned / POD',artist_share:0,email:'',noAccount:true,unassigned:true}); }
@@ -2397,10 +2439,11 @@ window.daRenderArtists=function(){
       : '<p class="sub" style="margin:8px 0;">No products yet.</p>';
     return '<details class="artist-card">'
       +'<summary>'
-        +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span></span>'
+        +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span>'+(p.real_name?'<span class="a-real" style="display:block;font-size:11px;color:var(--muted,#8aa6cc);font-weight:400;margin-top:1px;">'+esc(p.real_name)+'</span>':'')+'</span>'
         +'<span class="a-meta">'+mine.length+' product'+(mine.length===1?'':'s')+' &nbsp;·&nbsp; Artist '+apct+'% / DA '+dpct+'% &nbsp;·&nbsp; earns '+money(earn)+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--warn,#e0a030)">no account yet</span>':'')+'</span>'
       +'</summary>'
       +'<div class="a-body">'
+        +(p.unassigned?'':'<div style="text-align:right;margin:-2px 0 6px;"><button class="btn ghost sm" onclick="daEditArtist(\''+esc(code)+'\')">\u270e Edit artist</button></div>')
         +'<div class="a-stats">'
           +'<div><b>'+mine.length+'</b><span>products</span></div>'
           +'<div><b>'+qty+'</b><span>units on hand</span></div>'
@@ -2435,6 +2478,7 @@ window.daLoadDocs=function(){
     window.daDocs=r.data||[];
     if(typeof daRenderMyDocs==='function') daRenderMyDocs();
     if(typeof daRenderArtists==='function') daRenderArtists();
+    if(typeof daRenderAllArtistDocs==='function') daRenderAllArtistDocs();
   });
 };
 function daDocRow(code,key){ return (window.daDocs||[]).filter(function(d){ return d.artist_code===code && d.doc_key===key; })[0]||null; }
@@ -2500,6 +2544,293 @@ window.daRenderMyDocs=function(){
   }).join('');
   box.innerHTML=banner+'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Document</th><th>You signed</th><th>Company signed</th><th>Verified</th><th style="text-align:left;">File</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 };
+</script>
+<script>
+/* ===== Manager: edit an artist (display name + SKU code) with confirm + SKU propagation ===== */
+(function(){
+  if(document.getElementById('artistEditModal')) return;
+  var m=document.createElement('div'); m.id='artistEditModal';
+  m.style.cssText='position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;background:rgba(4,12,24,.62);padding:16px;';
+  m.innerHTML='<div style="width:100%;max-width:540px;background:var(--panel,#102647);border:1px solid var(--border,#1E3E6E);border-radius:14px;padding:22px;box-shadow:0 16px 50px rgba(0,0,0,.5);color:var(--text,#e7f2fb);">'
+   +'<h3 style="margin:0 0 4px;">Edit artist</h3>'
+   +'<div id="aeCtx" style="color:var(--muted,#8aa6cc);font-size:12.5px;margin-bottom:14px;"></div>'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Actual name (private — records &amp; payouts)</label>'
+   +'<input id="aeReal" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Nickname / Handle (shown in the app)</label>'
+   +'<input id="aeName" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Artist code (2-4 letters — appears in every SKU)</label><br>'
+   +'<input id="aeCode" maxlength="4" style="width:130px;text-transform:uppercase;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 12px;">'
+   +'<div id="aePreview" style="font-size:12.5px;line-height:1.55;background:var(--panel2,#16305A);border:1px solid var(--border,#1E3E6E);border-radius:8px;padding:10px 12px;max-height:230px;overflow:auto;margin-bottom:8px;"></div>'
+   +'<div id="aeWarn" style="color:var(--bad,#e05c5c);font-size:12.5px;min-height:16px;margin-bottom:10px;"></div>'
+   +'<div style="display:flex;gap:10px;justify-content:flex-end;">'
+     +'<button class="btn ghost sm" onclick="daArtistEditClose()">Cancel</button>'
+     +'<button class="btn sm" id="aeApply" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daArtistRenameApply()">Apply</button>'
+   +'</div></div>';
+  document.body.appendChild(m);
+  m.addEventListener('input',function(e){ if(e.target&&(e.target.id==='aeCode'||e.target.id==='aeName')){ window._aeArmed=false; daArtistRenamePreview(); } });
+  m.addEventListener('click',function(e){ if(e.target===m) daArtistEditClose(); });
+})();
+
+var _aeState={code:'',id:null,noAccount:false};
+window._aeArmed=false;
+
+window.daEditArtist=function(code){
+  code=(code||'').toUpperCase();
+  var prof=(window.daProfilesAll||[]).filter(function(p){return (p.artist_code||'').toUpperCase()===code;})[0];
+  var NAMEMAP={WEY:'Cory / Weylin',INK:'Justin / Ink Witch',PIC:'April / Picaru',COL:'Colab',DA:'Digital Alchemists'};
+  var _meta=(window.daArtistMeta||{})[code]||{};
+  var name=prof?(prof.display_name||''):(_meta.display_name||NAMEMAP[code]||code);
+  _aeState={code:code,id:prof?prof.id:null,noAccount:!prof};
+  window._aeArmed=false;
+  document.getElementById('aeName').value=name;
+  document.getElementById('aeName').disabled=false;
+  document.getElementById('aeReal').value=prof?(prof.real_name||''):(_meta.real_name||'');
+  document.getElementById('aeReal').disabled=false;
+  document.getElementById('aeCode').value=code;
+  document.getElementById('aeCtx').textContent=prof?('Account: '+(prof.email||'this artist')):'No account yet — the actual name & handle are saved to the artist directory; you can also change the code.';
+  document.getElementById('aeWarn').textContent='';
+  daArtistRenamePreview();
+  document.getElementById('artistEditModal').style.display='flex';
+};
+window.daArtistEditClose=function(){ var m=document.getElementById('artistEditModal'); if(m) m.style.display='none'; window._aeArmed=false; };
+
+function _aeItemsFor(code){ var all=(typeof items!=='undefined'&&items)?items:[]; return all.filter(function(it){ return window.daArtistCodeOf(it)===code; }); }
+function _aeRewriteSku(sku,newCode){ var parts=(sku||'').split('-'); if(parts.length){ parts[0]=newCode; } return parts.join('-'); }
+function _aeResetBtn(){ var b=document.getElementById('aeApply'); if(b){ b.textContent='Apply'; b.style.background='var(--accent,#07A5C0)'; b.style.color='#04121f'; } }
+
+window.daArtistRenamePreview=function(){
+  _aeResetBtn();
+  var newCode=(document.getElementById('aeCode').value||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,4);
+  var box=document.getElementById('aePreview'), warn=document.getElementById('aeWarn');
+  var mine=_aeItemsFor(_aeState.code);
+  window._aeNewCode=newCode; window._aeChanges=[]; window._aeCollide=[];
+  if(!newCode){ box.textContent='Enter an artist code.'; return; }
+  if(newCode===_aeState.code){ box.innerHTML='<b>'+mine.length+'</b> product'+(mine.length===1?'':'s')+' under <b>'+esc(_aeState.code)+'</b>. Change the code to rewrite their SKUs'+(_aeState.id?', or just update the display name.':'.'); warn.textContent=''; return; }
+  var existing={}; (items||[]).forEach(function(it){ existing[(it.sku||'').toUpperCase()]=it.id; });
+  var changes=[], collide=[];
+  mine.forEach(function(it){ var ns=_aeRewriteSku(it.sku,newCode); changes.push([it.sku,ns]); var ex=existing[(ns||'').toUpperCase()]; if(ex&&ex!==it.id) collide.push(ns); });
+  var head='<b>'+changes.length+'</b> SKU'+(changes.length===1?'':'s')+' will change ('+esc(_aeState.code)+' → '+esc(newCode)+'):<br>';
+  var list=changes.slice(0,25).map(function(c){ return '<span style="font-family:monospace">'+esc(c[0])+'</span> → <span style="font-family:monospace;color:var(--accent2,#47c5d5)">'+esc(c[1])+'</span>'; }).join('<br>');
+  if(changes.length>25) list+='<br>…and '+(changes.length-25)+' more';
+  box.innerHTML=head+(changes.length?list:'(no products yet)')+'<div style="margin-top:8px;color:var(--muted,#8aa6cc)">Applies in the app now; matching Shopify variant SKUs are queued for sync.</div>';
+  warn.textContent=collide.length?('⚠ '+collide.length+' target SKU(s) already exist — resolve before renaming: '+collide.slice(0,3).join(', ')):'';
+  window._aeChanges=changes; window._aeCollide=collide;
+};
+
+window.daArtistRenameApply=function(){
+  var newCode=window._aeNewCode||'', oldCode=_aeState.code;
+  var newName=document.getElementById('aeName').value.trim();
+  var codeChanged=newCode && newCode!==oldCode;
+  if(codeChanged && window._aeCollide && window._aeCollide.length){ if(window.showToast)showToast('Resolve target-SKU collisions first.','error'); return; }
+  if(!codeChanged){
+    var _real=(document.getElementById('aeReal').value||'').trim()||null;
+    if(_aeState.id){
+      window.daSB.from('profiles').update({display_name:newName, real_name:_real}).eq('id',_aeState.id).then(function(res){
+        if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
+        (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ p.display_name=newName; p.real_name=_real; } });
+        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Artist updated.','success');
+      });
+    } else {
+      window.daSB.from('artists').upsert({code:oldCode, display_name:newName||null, real_name:_real, updated_at:new Date().toISOString()}).then(function(res){
+        if(res&&res.error){ if(window.showToast)showToast('Update failed: '+(res.error.message||''),'error'); return; }
+        window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[oldCode]={display_name:newName||'',real_name:_real||''};
+        if(window.daRenderArtists)daRenderArtists(); daArtistEditClose(); if(window.showToast)showToast('Artist updated.','success');
+      });
+    }
+    return;
+  }
+  // destructive code change -> two-click confirm
+  var n=(window._aeChanges||[]).length;
+  if(!window._aeArmed){
+    window._aeArmed=true;
+    var b=document.getElementById('aeApply'); b.textContent='Confirm — rewrite '+n+' SKU'+(n===1?'':'s'); b.style.background='var(--bad,#e05c5c)'; b.style.color='#fff';
+    return;
+  }
+  window._aeArmed=false;
+  var btn=document.getElementById('aeApply'); btn.disabled=true; btn.textContent='Applying…';
+  var renameLog=[];
+  _aeItemsFor(oldCode).forEach(function(it){ var ns=_aeRewriteSku(it.sku,newCode); renameLog.push({old_sku:it.sku,new_sku:ns}); it.sku=ns; it.artistCode=newCode; });
+  (window.daProfilesAll||[]).forEach(function(p){ if((p.artist_code||'').toUpperCase()===oldCode) p.artist_code=newCode; });
+  if(window.daShareMap && window.daShareMap[oldCode]!=null) window.daShareMap[newCode]=window.daShareMap[oldCode];
+  if(window.DA_ARTIST===oldCode) window.DA_ARTIST=newCode;
+  var finish=function(){
+    if(typeof save==='function') save();
+    if(typeof render==='function') render();
+    if(window.daRenderArtists) daRenderArtists();
+    btn.disabled=false; _aeResetBtn(); daArtistEditClose();
+    if(window.showToast) showToast('Renamed '+oldCode+' → '+newCode+' ('+renameLog.length+' SKUs). Shopify sync queued.','success');
+    if(renameLog.length && window.daSB){
+      var rows=renameLog.map(function(r){ return {old_sku:r.old_sku,new_sku:r.new_sku,artist_old:oldCode,artist_new:newCode,status:'pending',created_by:(window.daProfile&&window.daProfile.id)||null}; });
+      window.daSB.from('sku_renames').insert(rows).then(function(res){ if(res&&res.error) console.error('sku_renames insert',res.error); });
+    }
+  };
+  if(_aeState.id){
+    var upd={artist_code:newCode}; if(newName) upd.display_name=newName; upd.real_name=(document.getElementById('aeReal').value||'').trim()||null;
+    window.daSB.from('profiles').update(upd).eq('id',_aeState.id).then(function(res){ if(res&&res.error){ console.error(res.error); if(window.showToast)showToast('SKUs saved; profile update failed: '+(res.error.message||''),'error'); } else { (window.daProfilesAll||[]).forEach(function(p){ if(p.id===_aeState.id){ if(newName)p.display_name=newName; p.real_name=upd.real_name; } }); } finish(); });
+  } else {
+    var _realC=(document.getElementById('aeReal').value||'').trim()||null;
+    window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[newCode]={display_name:(newName||''),real_name:(_realC||'')}; delete window.daArtistMeta[oldCode];
+    window.daSB.from('artists').upsert({code:newCode, display_name:newName||null, real_name:_realC, updated_at:new Date().toISOString()}).then(function(res){ if(res&&res.error) console.error('artists upsert',res.error); finish(); });
+  }
+};
+</script>
+<script>
+/* ===== Manager: all-artists contracts overview (Documents tab) ===== */
+window.daRenderAllArtistDocs=function(){
+  var box=document.getElementById('allArtistDocs'); if(!box) return;
+  if(!window.DA_IS_MANAGER){ box.innerHTML=''; return; }
+  var profs=(window.daArtistBuckets?window.daArtistBuckets():[]).filter(function(p){ return !p.unassigned; });
+  if(!profs.length){ box.innerHTML='<p class="sub" style="margin:8px 0;">No artists yet.</p>'; return; }
+  var total=(window.DA_DOCS||[]).length, fully=0;
+  var html=profs.map(function(p){
+    var code=(p.artist_code||'').toUpperCase();
+    var pend=(typeof daDocsPending==='function')?daDocsPending(code):total;
+    var signed=total-pend; if(pend===0) fully++;
+    var badge=pend?('<span class="pill warn">'+pend+' pending</span>'):'<span class="pill good">all signed</span>';
+    var body=(typeof daArtistDocsHtml==='function')?daArtistDocsHtml(code):'';
+    return '<details class="artist-card"><summary>'
+      +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span>'+(p.real_name?'<span class="a-real" style="display:block;font-size:11px;color:var(--muted,#8aa6cc);font-weight:400;">'+esc(p.real_name)+'</span>':'')+'</span>'
+      +'<span class="a-meta">'+signed+' / '+total+' documents &nbsp;·&nbsp; '+badge+'</span>'
+      +'</summary><div class="a-body">'+body+'</div></details>';
+  }).join('');
+  box.innerHTML='<p class="sub" style="margin:0 0 10px;"><b>'+fully+'</b> of '+profs.length+' artists fully signed &amp; verified.</p>'+html;
+};
+</script>
+<script>
+/* ===================== Artist payouts (from Shopify orders) ===================== */
+(function(){
+  window.daPayouts = [];
+  window.daPayoutView = 'unpaid';
+  function money(n){ return '$'+(Number(n)||0).toFixed(2); }
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function notify(m){ if(window.toast){window.toast(m);} else if(window.showToast){window.showToast(m);} }
+
+  window.daLoadPayouts = function(){
+    if(!window.daSB){ return; }
+    window.daSB.from('order_payouts').select('*').order('processed_at',{ascending:false}).then(function(r){
+      if(r.error){ console.error('order_payouts', r.error); return; }
+      window.daPayouts = r.data || [];
+      if(typeof window.daRenderPayouts==='function') window.daRenderPayouts();
+    });
+  };
+
+  window.daPayoutFilter = function(v){ window.daPayoutView = v; window.daRenderPayouts(); };
+
+  window.daMarkPaid = function(id, paid){
+    if(!window.daSB){ return; }
+    var patch = paid ? { paid:true, paid_at:new Date().toISOString() } : { paid:false, paid_at:null };
+    window.daSB.from('order_payouts').update(patch).eq('id', id).then(function(r){
+      if(r.error){ notify('Could not update: '+r.error.message); return; }
+      var row=(window.daPayouts||[]).find(function(x){return x.id===id;});
+      if(row){ row.paid=patch.paid; row.paid_at=patch.paid_at; }
+      window.daRenderPayouts(); notify(paid?'Marked paid.':'Marked unpaid.');
+    });
+  };
+
+  window.daMarkArtistPaid = function(code){
+    var rows=(window.daPayouts||[]).filter(function(x){return (x.artist_code||'')===code && !x.paid;});
+    if(!rows.length){ return; }
+    if(!confirm('Mark all '+rows.length+' unpaid item(s) for '+code+' as paid?')){ return; }
+    var now=new Date().toISOString(); var ids=rows.map(function(x){return x.id;});
+    window.daSB.from('order_payouts').update({paid:true,paid_at:now}).in('id',ids).then(function(r){
+      if(r.error){ notify('Could not update: '+r.error.message); return; }
+      rows.forEach(function(x){ x.paid=true; x.paid_at=now; });
+      window.daRenderPayouts(); notify('Marked '+ids.length+' item(s) paid for '+code+'.');
+    });
+  };
+
+  function summarize(list){
+    var by={};
+    list.forEach(function(x){
+      var c=x.artist_code||'—';
+      if(!by[c]){ by[c]={code:c,items:0,owed:0,life:0}; }
+      by[c].items++; by[c].life+=Number(x.artist_earn)||0;
+      if(!x.paid){ by[c].owed+=Number(x.artist_earn)||0; }
+    });
+    return Object.keys(by).sort().map(function(k){return by[k];});
+  }
+
+  window.daRenderPayouts = function(){
+    var all=window.daPayouts||[];
+    var mgr=!!window.DA_IS_MANAGER;
+
+    var sumBox=document.getElementById('payoutSummary');
+    var tblBox=document.getElementById('payoutTable');
+    if(mgr && sumBox && tblBox){
+      var sums=summarize(all);
+      if(!sums.length){ sumBox.innerHTML='<p class="sub">No orders recorded yet. Once the webhook is live, sold items appear here automatically.</p>'; }
+      else {
+        sumBox.innerHTML=sums.map(function(s){
+          return '<div class="stat" style="text-align:left;min-width:150px;">'
+            +'<div class="l" style="text-transform:none;font-weight:700;">'+esc(s.code)+'</div>'
+            +'<div class="n" style="color:var(--warn);">'+money(s.owed)+'</div>'
+            +'<div class="l">owed &middot; '+money(s.life)+' lifetime</div>'
+            +(s.owed>0?'<button class="btn ghost sm" style="margin-top:8px;" onclick="daMarkArtistPaid(\''+esc(s.code)+'\')">Mark all paid</button>':'')
+            +'</div>';
+        }).join('');
+      }
+      var view=window.daPayoutView||'unpaid';
+      var rows=all.filter(function(x){ return view==='all' ? true : !x.paid; });
+      var fu=document.getElementById('poFilterUnpaid'), fa=document.getElementById('poFilterAll');
+      if(fu) fu.classList.toggle('active', view==='unpaid');
+      if(fa) fa.classList.toggle('active', view==='all');
+      if(!rows.length){ tblBox.innerHTML='<p class="sub">Nothing to show for this filter.</p>'; }
+      else {
+        var bodyRows=rows.map(function(x){
+          return '<tr>'
+            +'<td>'+esc(x.order_name||x.shopify_order_id)+'</td>'
+            +'<td style="text-align:left;">'+esc(x.title||'')+'<div class="sub" style="font-size:11px;">'+esc(x.sku||'')+'</div></td>'
+            +'<td>'+esc(x.artist_code||'—')+'</td>'
+            +'<td class="num">'+(x.qty||0)+'</td>'
+            +'<td class="num">'+money(x.net_revenue)+'</td>'
+            +'<td class="num">'+money(x.mfg_cost)+'</td>'
+            +'<td class="num">'+money(x.fee)+'</td>'
+            +'<td class="num">'+money(x.shipping)+'</td>'
+            +'<td class="num">'+money(x.profit)+'</td>'
+            +'<td class="num" style="color:var(--warn);font-weight:700;">'+money(x.artist_earn)+'</td>'
+            +'<td class="num">'+money(x.business_earn)+'</td>'
+            +'<td>'+(x.paid?'<span class="pill">Paid</span>':'<span class="pill warn">Unpaid</span>')+'</td>'
+            +'<td>'+(x.paid
+                ? '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',false)">Undo</button>'
+                : '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',true)">Mark paid</button>')+'</td>'
+            +'</tr>';
+        }).join('');
+        tblBox.innerHTML='<div class="tablewrap"><table><thead><tr>'
+          +'<th style="text-align:left;">Order</th><th style="text-align:left;">Item</th><th>Artist</th><th>Qty</th>'
+          +'<th class="num">Net</th><th class="num">Cost</th><th class="num">Fee</th><th class="num">Ship</th>'
+          +'<th class="num">Profit</th><th class="num">Artist</th><th class="num">Business</th><th>Status</th><th></th>'
+          +'</tr></thead><tbody>'+bodyRows+'</tbody></table></div>';
+      }
+    }
+
+    var myBox=document.getElementById('myPayouts');
+    if(myBox){
+      var mine=all;
+      var code=(window.daProfile&&window.daProfile.artist_code)||window.DA_ARTIST||'';
+      if(mgr && code){ mine=all.filter(function(x){ return (x.artist_code||'')===code; }); }
+      var owed=0, life=0;
+      mine.forEach(function(x){ life+=Number(x.artist_earn)||0; if(!x.paid){ owed+=Number(x.artist_earn)||0; } });
+      var head='<div class="grid" style="margin-bottom:12px;">'
+        +'<div class="stat"><div class="n" style="color:var(--warn);">'+money(owed)+'</div><div class="l">Owed to you</div></div>'
+        +'<div class="stat"><div class="n">'+money(life)+'</div><div class="l">Lifetime earned</div></div>'
+        +'<div class="stat"><div class="n">'+mine.length+'</div><div class="l">Items sold</div></div>'
+        +'</div>';
+      if(!mine.length){ myBox.innerHTML=head+'<p class="sub">No sales recorded yet. When an order includes your work, your share shows up here.</p>'; }
+      else {
+        var mb=mine.map(function(x){
+          return '<tr>'
+            +'<td>'+esc(x.order_name||x.shopify_order_id)+'</td>'
+            +'<td style="text-align:left;">'+esc(x.title||'')+'</td>'
+            +'<td class="num">'+(x.qty||0)+'</td>'
+            +'<td class="num" style="color:var(--warn);font-weight:700;">'+money(x.artist_earn)+'</td>'
+            +'<td>'+(x.paid?'<span class="pill">Paid</span>':'<span class="pill warn">Pending</span>')+'</td>'
+            +'</tr>';
+        }).join('');
+        myBox.innerHTML=head+'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Order</th><th style="text-align:left;">Item</th><th>Qty</th><th class="num">You earn</th><th>Status</th></tr></thead><tbody>'+mb+'</tbody></table></div>';
+      }
+    }
+  };
+})();
 </script>
 </body>
 </html>
