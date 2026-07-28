@@ -1039,14 +1039,14 @@
     </div>
   </div>
   <div id="tab-payouts" class="tabpanel">
-      <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs)daRenderCollabs()" style="margin-bottom:22px;">
+      <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs){daRenderCollabs();if(window.daRenderCollabSales)daRenderCollabSales();}" style="margin-bottom:22px;">
         <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
         <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
           <select id="collabPickSku" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;"><option value="">Select a collab SKU&hellip;</option></select>
           <button class="btn ghost sm" onclick="daCollabAdd()">Add collab SKU</button>
         </div>
-        <div id="collabBox"><p class="sub">Open to load&hellip;</p></div>
+        <div id="collabBox"><p class="sub">Open to load&hellip;</p></div><div id="collabSalesBox"></div>
       </details>
     <div class="card mgr-only" style="">
       <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
@@ -1639,6 +1639,45 @@ async function daCollabApprove(sku){
   }catch(e){ notify('Save failed: '+(e&&e.message||e)); }
 }
 
+window.daRenderCollabSales = function(){
+  var box = document.getElementById('collabSalesBox');
+  if(!box) return;
+  var map = window.daCollabMap || {};
+  if(!Object.keys(map).length){ box.innerHTML=''; return; }
+  var rows = (window.daPayouts||[]).filter(function(x){ return map[String(x.sku||'').toUpperCase()]; });
+  var unpaid = rows.filter(function(x){ return !x.paid; });
+  var paidRows = rows.filter(function(x){ return x.paid; });
+  function line(x, isPaid){
+    var sp = (typeof daCollabSplit==='function') ? daCollabSplit(x) : null;
+    var who = sp ? sp.codes.join(' + ') : (x.artist_code||'?');
+    var each = sp ? sp.each : 0; var pool = sp ? sp.pool : 0;
+    var label = (x.order_name || ('#'+(x.shopify_order_id||''))) + ' \u00b7 ' + (x.sku||'');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:9px 0;border-top:1px solid var(--line);">'
+      + '<div style="flex:1;min-width:220px;">'
+      + '<div style="font-weight:600;">'+esc(label)+'</div>'
+      + '<div class="sub">'+esc(who)+' \u00b7 pool '+money(pool)+' \u2192 '+money(each)+' each</div>'
+      + '</div><div style="flex-shrink:0;">'
+      + (isPaid ? '<button class="btn ghost sm" data-collab-unpay="'+x.id+'">Undo</button>'
+                : '<button class="btn sm" data-collab-pay="'+x.id+'">Mark paid</button>')
+      + '</div></div>';
+  }
+  var html = '<h3 style="margin:18px 0 2px;font-size:14px;">Collab sales</h3>';
+  if(!rows.length){ html += '<p class="sub">No collab-SKU sales recorded yet.</p>'; }
+  else {
+    if(unpaid.length){ html += '<div class="sub" style="margin-top:8px;font-weight:600;">Unpaid ('+unpaid.length+')</div>' + unpaid.map(function(x){return line(x,false);}).join(''); }
+    else { html += '<p class="sub" style="margin-top:8px;">All collab sales settled \u2713</p>'; }
+    if(paidRows.length){ html += '<div class="sub" style="margin-top:14px;font-weight:600;">Paid ('+paidRows.length+')</div>' + paidRows.map(function(x){return line(x,true);}).join(''); }
+  }
+  box.innerHTML = html;
+  function pay(id, val){
+    var row=(window.daPayouts||[]).find(function(r){return String(r.id)===String(id);});
+    if(row){ row.paid=val; row.paid_batch = val ? new Date().toISOString().slice(0,7) : null; }
+    if(window.daMarkPaid) window.daMarkPaid(id, val);
+    window.daRenderCollabSales();
+  }
+  box.querySelectorAll('[data-collab-pay]').forEach(function(b){ b.addEventListener('click', function(){ pay(b.getAttribute('data-collab-pay'), true); }); });
+  box.querySelectorAll('[data-collab-unpay]').forEach(function(b){ b.addEventListener('click', function(){ pay(b.getAttribute('data-collab-unpay'), false); }); });
+};
 function money(n){ return '$'+(n||0).toFixed(2); }
 
 document.querySelectorAll('#tbl th[data-k]').forEach(th=>{
