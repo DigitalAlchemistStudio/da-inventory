@@ -1043,7 +1043,7 @@
         <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
         <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <input id="collabNewSku" placeholder="Collab SKU (e.g. COL-STK-DRG-01)" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;">
+          <select id="collabPickSku" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;"><option value="">Select a collab SKU&hellip;</option></select>
           <button class="btn ghost sm" onclick="daCollabAdd()">Add collab SKU</button>
         </div>
         <div id="collabBox"><p class="sub">Open to load&hellip;</p></div>
@@ -1509,6 +1509,7 @@ window.daRenderCollabs = async function(){
   box.innerHTML='<p class="sub">Loading&hellip;</p>';
   try{
     var r=await window.daSB.from('collab_skus').select('*').order('sku');
+    if(window.daFillCollabPicker)daFillCollabPicker();
     if(r.error) throw r.error;
     var rows=r.data||[];
     var special=window.daRosterSpecial||{};
@@ -1544,7 +1545,7 @@ window.daRenderCollabs = async function(){
   }catch(e){ box.innerHTML='<p class="sub" style="color:var(--bad)">Could not load: '+esc(String(e&&e.message||e))+'</p>'; }
 };
 async function daCollabAdd(){
-  var el=document.getElementById('collabNewSku'); var sku=(el&&el.value||'').trim();
+  var el=document.getElementById('collabPickSku'); var sku=(el&&el.value||'').trim();
   if(!sku){ notify('Enter a SKU first.'); return; }
   try{
     var res=await window.daSB.from('collab_skus').upsert({sku:sku, artist_codes:[], updated_at:new Date().toISOString()}, {onConflict:'sku'});
@@ -1617,6 +1618,22 @@ function daCollabSplit(row){
   var pool=avg*profit;
   return { codes:codes, n:codes.length, avg:avg, pool:pool, each:pool/codes.length };
 }
+
+
+window.daFillCollabPicker = async function(){
+  var sel=document.getElementById('collabPickSku'); if(!sel||!window.daSB) return;
+  try{
+    var mapped={};
+    var mr=await window.daSB.from('collab_skus').select('sku'); (mr.data||[]).forEach(function(x){ mapped[String(x.sku).toUpperCase()]=1; });
+    var pr=await window.daSB.from('products').select('sku,title');
+    var seen={}, list=[];
+    (pr.data||[]).forEach(function(p){ var s=String(p.sku||''); var c=s.split(/[-_]/)[0].toUpperCase(); if(c==='COL' && !mapped[s.toUpperCase()] && !seen[s.toUpperCase()]){ seen[s.toUpperCase()]=1; list.push(p); } });
+    list.sort(function(a,b){ return String(a.sku).localeCompare(String(b.sku)); });
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Select a collab SKU&hellip;</option>'+list.map(function(p){ return '<option value="'+esc(p.sku)+'">'+esc(p.sku)+(p.title?(' — '+esc(p.title)):'')+'</option>'; }).join('');
+    if(cur && [].some.call(sel.options,function(o){return o.value===cur;})) sel.value=cur;
+  }catch(e){}
+};
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
