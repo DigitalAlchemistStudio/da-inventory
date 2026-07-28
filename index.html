@@ -2,8 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Digital Alchemists — Product Manager</title>
+<!-- PWA: installable Guild app -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0a2c46">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="da-icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DA Guild">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(e){ console.log('SW register failed', e); });
+    });
+  }
+</script>
 <style>
   :root{
     --navy:#0C3482; --accent:#07A5C0; --accent2:#47C5D5; --cyan:#91EBEE;
