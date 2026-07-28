@@ -1578,6 +1578,24 @@ async function daCollabDelete(sku){
   }catch(e){ notify('Remove failed: '+(e&&e.message||e)); }
 }
 
+
+// notify fallback for injected features (archive/collab) — app 'notify' is scoped, not global
+if(typeof window.notify!=='function'){
+  window.notify=function(m, kind){
+    try{
+      var w=document.getElementById('toastWrap');
+      if(!w){ console.log('[notify]', m); return; }
+      var d=document.createElement('div');
+      d.className='toast'+(kind?(' '+kind):'');
+      d.innerHTML='<div class="msg"></div><div class="x">\u00d7</div>';
+      d.querySelector('.msg').textContent=m;
+      d.querySelector('.x').onclick=function(){ d.remove(); };
+      w.appendChild(d);
+      setTimeout(function(){ d.classList.add('hide'); setTimeout(function(){ d.remove(); }, 250); }, 4000);
+    }catch(e){ console.log('[notify]', m); }
+  };
+}
+
 function money(n){ return '$'+(n||0).toFixed(2); }
 
 document.querySelectorAll('#tbl th[data-k]').forEach(th=>{
