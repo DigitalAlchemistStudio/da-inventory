@@ -1501,9 +1501,9 @@ document.querySelectorAll('#tbl th[data-k]').forEach(th=>{
 function render(){
   const q=(document.getElementById('search').value||'').toLowerCase();
   let rows=items.filter(it=> !q || (it.title+it.sku+it.vendor+it.size+artistOf(it)).toLowerCase().includes(q));
-    (function(){ var af=document.getElementById('artistFilter'); if(!af) return; var cur=af.value; var m={}; items.forEach(function(it){ var c=(it.sku||'').split('-')[0].toUpperCase(); if(c) m[c]=artistOf(it); }); af.innerHTML='<option value="">All artists</option>'+Object.keys(m).sort().map(function(c){ return '<option value="'+c+'">'+esc(m[c])+'</option>'; }).join(''); if([].some.call(af.options,function(o){return o.value===cur;})) af.value=cur; })();
+    (function(){ var af=document.getElementById('artistFilter'); if(!af) return; var cur=af.value; var meta=window.daArtistMeta||{}; var m={}; items.forEach(function(it){ var c=daArtistCodeOf(it.sku||'')||'__none'; if(!m[c]){ m[c]= (c==='__none') ? 'Unassigned / POD' : ((meta[c]&&(meta[c].display_name||meta[c].real_name))||c); } }); var order=Object.keys(m).sort(function(a,b){ if(a==='__none') return 1; if(b==='__none') return -1; return String(m[a]).localeCompare(String(m[b])); }); af.innerHTML='<option value="">All artists</option>'+order.map(function(c){ return '<option value="'+c+'">'+esc(m[c])+'</option>'; }).join(''); if([].some.call(af.options,function(o){return o.value===cur;})) af.value=cur; })();
     var __afSel=(document.getElementById('artistFilter')||{}).value||'';
-    if(__afSel){ rows=rows.filter(function(it){ return (it.sku||'').split('-')[0].toUpperCase()===__afSel; }); }
+    if(__afSel){ rows=rows.filter(function(it){ return (daArtistCodeOf(it.sku||'')||'__none')===__afSel; }); }
   rows.sort((a,b)=>{
     let av,bv;
     if(sortKey==='margin'){ av=marginPct(a)??-999; bv=marginPct(b)??-999; }
