@@ -1532,12 +1532,15 @@ window.daRenderCollabs = async function(){
       return '<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">'
         +'<b class="a-code" style="font-size:13px;">'+esc(row.sku)+'</b>'
-        +'<span class="sub">'+n+' artist'+(n===1?'':'s')+eachTxt+'</span>'
-        +'<button class="btn danger sm" data-collab-del="'+esc(row.sku)+'">Remove</button></div>'
-        +'<div>'+chips+'</div></div>';
+        +'<span class="sub">'+n+' artist'+(n===1?'':'s')+eachTxt+'</span></div>'
+        +'<div style="margin-bottom:10px;">'+chips+'</div>'
+        +'<div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;">'
+        +'<button class="btn sm" data-collab-approve="'+esc(row.sku)+'">Approve</button>'
+        +'<button class="btn danger sm" data-collab-del="'+esc(row.sku)+'">Remove</button>'
+        +'</div></div>';
     }).join('');
-    box.querySelectorAll('[data-collab-sku]').forEach(function(cb){
-      cb.addEventListener('change', function(){ daCollabToggle(cb.getAttribute('data-collab-sku'), cb.getAttribute('data-collab-code'), cb.checked); });
+    box.querySelectorAll('[data-collab-approve]').forEach(function(b){
+      b.addEventListener('click', function(){ daCollabApprove(b.getAttribute('data-collab-approve')); });
     });
     box.querySelectorAll('[data-collab-del]').forEach(function(b){
       b.addEventListener('click', function(){ daCollabDelete(b.getAttribute('data-collab-del')); });
@@ -1634,6 +1637,19 @@ window.daFillCollabPicker = async function(){
     if(cur && [].some.call(sel.options,function(o){return o.value===cur;})) sel.value=cur;
   }catch(e){}
 };
+
+
+async function daCollabApprove(sku){
+  var codes=[];
+  var box=document.getElementById('collabBox');
+  if(box){ box.querySelectorAll('[data-collab-sku]').forEach(function(cb){ if(cb.getAttribute('data-collab-sku')===sku && cb.checked) codes.push(String(cb.getAttribute('data-collab-code')).toUpperCase()); }); }
+  try{
+    var res=await window.daSB.from('collab_skus').update({artist_codes:codes, updated_at:new Date().toISOString()}).eq('sku',sku);
+    if(res.error) throw res.error;
+    notify('Approved '+sku+' \u2014 '+codes.length+' artist'+(codes.length===1?'':'s')+'.');
+    window.daRenderCollabs(); if(window.daLoadCollabMap)window.daLoadCollabMap();
+  }catch(e){ notify('Save failed: '+(e&&e.message||e)); }
+}
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
