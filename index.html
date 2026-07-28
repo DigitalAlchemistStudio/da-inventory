@@ -380,7 +380,7 @@
     <button class="tabbtn" data-tab="documents" onclick="switchTab('documents')">Documents</button>
     <button class="tabbtn" data-tab="payouts" onclick="switchTab('payouts')">Payouts</button>
     <button class="tabbtn mgr-only" data-tab="applications" onclick="switchTab('applications')">Applications <span id="reqTabCount" class="pill warn" style="font-size:10px;padding:1px 6px;display:none;">0</span></button>
-    <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button><button class="tabbtn mgr-only" data-tab="archived" onclick="switchTab('archived');window.daRenderRoster&&window.daRenderRoster()">Archived Artists</button>
+    <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button>
     <button class="tabbtn mgr-only" data-tab="utilities" onclick="switchTab('utilities')">Utilities</button>
   </div>
   <div id="tab-manager" class="tabpanel active">
@@ -939,13 +939,14 @@
     </div>
   </div>
   <div id="tab-artists" class="tabpanel">
+      <style>.asub-bar .asub-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-size:13px;font-weight:600;padding:8px 14px;cursor:pointer;border-radius:8px 8px 0 0;margin-bottom:-1px;}.asub-bar .asub-btn:hover{color:var(--text);background:var(--panel2);}.asub-bar .asub-btn.active{color:var(--cyan);border-bottom-color:var(--accent);}</style><div class="asub-bar" style="display:flex;gap:4px;margin:0 0 16px;border-bottom:1px solid var(--border);flex-wrap:wrap;"><button id="asubBtn-list" class="asub-btn active" onclick="daArtistsSub('list')">Artists</button><button id="asubBtn-arch" class="asub-btn mgr-only" onclick="daArtistsSub('arch')">Archived Artists</button></div>
+      <div id="asub-list" class="asub-panel">
     <div class="card">
       <h2>🎨 Artists</h2>
       <p class="sub" style="margin:-6px 0 12px;">Every artist account, the products they’ve added, and the profit split between them and Digital Alchemists. Change an artist’s cut and it recalculates their earnings across the app.</p>
       <div id="artistsList"></div>
-    </div>
-  </div>
-  <div id="tab-archived" class="tabpanel mgr-only">
+    </div></div>
+      <div id="asub-arch" class="asub-panel mgr-only" style="display:none;">
       <style>
       .roster-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
       .roster-fbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
@@ -962,9 +963,9 @@
         <p class="sub" style="margin:-6px 0 12px;">Every artist and their status at a glance. Archive artists who&rsquo;ve gone inactive &mdash; their documents &amp; payout history are kept. Reinstating requires a newly signed agreement, and an artist must be paid to $0 before they can be archived.</p>
         <div id="rosterFilters" class="roster-filters"></div>
         <div id="rosterBox"><p class="sub">Loading&hellip;</p></div>
-      </div>
+      </div></div>
     </div>
-    <div id="tab-utilities" class="tabpanel">
+  <div id="tab-utilities" class="tabpanel">
   <div class="card mgr-only" style="border-color:var(--accent2);">
     <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
     <p class="sub" style="margin:-6px 0 12px;">Import and export your catalog, push to Shopify, print barcodes, and load starter data — these used to sit in the top bar.</p>
@@ -1444,6 +1445,20 @@ async function daConfirmReinstate(code){
   }catch(e){ notify('Update failed: '+(e&&e.message||e)); }
 }
 setTimeout(function(){ try{ var p=document.getElementById('tab-archived'); if(p && p.classList.contains('active') && window.daRenderRoster) window.daRenderRoster(); }catch(e){} }, 1000);
+
+
+// ===== Artists tab subtabs =====
+window.daArtistsSub=function(which){
+  var list=document.getElementById('asub-list'), arch=document.getElementById('asub-arch');
+  var bl=document.getElementById('asubBtn-list'), ba=document.getElementById('asubBtn-arch');
+  if(!list||!arch) return;
+  var showArch = which==='arch';
+  list.style.display = showArch?'none':'';
+  arch.style.display = showArch?'':'none';
+  if(bl) bl.classList.toggle('active', !showArch);
+  if(ba) ba.classList.toggle('active', showArch);
+  if(showArch && window.daRenderRoster){ try{ window.daRenderRoster(); }catch(e){} }
+};
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
