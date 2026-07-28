@@ -1551,7 +1551,7 @@ async function daCollabAdd(){
     if(res.error) throw res.error;
     if(el) el.value='';
     notify('Added '+sku+' — now tick the artists.');
-    window.daRenderCollabs();
+    window.daRenderCollabs(); if(window.daLoadCollabMap)window.daLoadCollabMap();
   }catch(e){ notify('Add failed: '+(e&&e.message||e)); }
 }
 async function daCollabToggle(sku, code, on){
@@ -1565,8 +1565,8 @@ async function daCollabToggle(sku, code, on){
     if(!on && i>=0) codes.splice(i,1);
     var res=await window.daSB.from('collab_skus').update({artist_codes:codes, updated_at:new Date().toISOString()}).eq('sku',sku);
     if(res.error) throw res.error;
-    window.daRenderCollabs();
-  }catch(e){ notify('Update failed: '+(e&&e.message||e)); window.daRenderCollabs(); }
+    window.daRenderCollabs(); if(window.daLoadCollabMap)window.daLoadCollabMap();
+  }catch(e){ notify('Update failed: '+(e&&e.message||e)); window.daRenderCollabs(); if(window.daLoadCollabMap)window.daLoadCollabMap(); }
 }
 async function daCollabDelete(sku){
   if(!confirm('Remove collaboration mapping for '+sku+'?')) return;
@@ -1574,7 +1574,7 @@ async function daCollabDelete(sku){
     var res=await window.daSB.from('collab_skus').delete().eq('sku',sku);
     if(res.error) throw res.error;
     notify('Removed '+sku+'.');
-    window.daRenderCollabs();
+    window.daRenderCollabs(); if(window.daLoadCollabMap)window.daLoadCollabMap();
   }catch(e){ notify('Remove failed: '+(e&&e.message||e)); }
 }
 
@@ -1594,6 +1594,28 @@ if(typeof window.notify!=='function'){
       setTimeout(function(){ d.classList.add('hide'); setTimeout(function(){ d.remove(); }, 250); }, 4000);
     }catch(e){ console.log('[notify]', m); }
   };
+}
+
+
+// ===== Collaboration even-split helpers =====
+window.daCollabMap = window.daCollabMap || {};
+window.daLoadCollabMap = async function(){
+  if(!window.daSB) return;
+  try{
+    var r=await window.daSB.from('collab_skus').select('sku,artist_codes');
+    var m={}; (r.data||[]).forEach(function(x){ m[String(x.sku||'').toUpperCase()]=(x.artist_codes||[]).map(function(c){return String(c).toUpperCase();}); });
+    window.daCollabMap=m;
+  }catch(e){}
+  if(typeof window.daRenderPayouts==='function') window.daRenderPayouts();
+};
+function daCollabShare(c){ c=String(c).toUpperCase(); return (window.daShareMap && window.daShareMap[c]!=null)? Number(window.daShareMap[c]) : (Number(window.DA_SHARE)||0.4); }
+function daCollabSplit(row){
+  var codes=(window.daCollabMap||{})[String(row&&row.sku||'').toUpperCase()];
+  if(!codes||!codes.length) return null;
+  var profit=Math.max(Number(row.profit)||0,0);
+  var avg=codes.reduce(function(a,c){return a+daCollabShare(c);},0)/codes.length;
+  var pool=avg*profit;
+  return { codes:codes, n:codes.length, avg:avg, pool:pool, each:pool/codes.length };
 }
 
 function money(n){ return '$'+(n||0).toFixed(2); }
@@ -2117,7 +2139,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
       if(window.daLoadPayouts){ window.daLoadPayouts(); }
         document.body.classList.toggle('not-manager', !prof.is_manager);
         window.DA_SHARE = (prof.artist_share!=null?prof.artist_share:0.40);
-        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles(), window.daLoadArtistMeta() ]);
+        return Promise.all([ window.daLoadCollections(), window.daLoadProducts(), window.daLoadProfiles(), window.daLoadArtistMeta(), window.daLoadCollabMap() ]);
       });
     }).then(function(){ if(window.bInitPanel) window.bInitPanel(); if(window.bUpdate) window.bUpdate(); if(window.daRenderAllArtistDocs) window.daRenderAllArtistDocs(); })
       .catch(function(e){ console.error('boot',e); });
@@ -3164,11 +3186,11 @@ window.daRenderAllArtistDocs=function(){
 
   function summarize(list){
     var by={};
+    function add(c,earn,paid){ c=c||' '; if(!by[c]){by[c]={code:c,items:0,owed:0,life:0};} by[c].items++; by[c].life+=earn; if(!paid) by[c].owed+=earn; }
     list.forEach(function(x){
-      var c=x.artist_code||'—';
-      if(!by[c]){ by[c]={code:c,items:0,owed:0,life:0}; }
-      by[c].items++; by[c].life+=Number(x.artist_earn)||0;
-      if(!x.paid){ by[c].owed+=Number(x.artist_earn)||0; }
+      var sp=(typeof daCollabSplit==='function')?daCollabSplit(x):null;
+      if(sp){ sp.codes.forEach(function(cc){ add(cc, sp.each, x.paid); }); return; }
+      add(x.artist_code, Number(x.artist_earn)||0, x.paid);
     });
     return Object.keys(by).sort().map(function(k){return by[k];});
   }
