@@ -559,7 +559,7 @@
   <div class="card">
     <h2 id="listTitle">Master list</h2>
     <div class="toolbar">
-      <input type="search" id="search" placeholder="Search artist, title, SKU, vendor..." oninput="render()">
+      <input type="search" id="search" placeholder="Search artist, title, SKU, vendor..." oninput="render()"><label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Artist <select id="artistFilter" onchange="render()"><option value="">All artists</option></select></label>
       <label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Sort by <select id="sortSel" onchange="setSort(this.value)"><option value="artist">Artist</option><option value="title">Illustration / Title</option><option value="sku">SKU</option><option value="size">Size</option><option value="vendor">Vendor</option><option value="price">Price</option><option value="qty">Qty</option><option value="margin">Margin %</option></select></label>
       <button class="btn ghost sm" id="sortDirBtn" onclick="toggleSortDir()" title="Ascending / descending">▲</button>
       <span class="ship-cfg" style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:4px;">Ship est: base $<input type="number" id="shipBase" value="1.00" step="0.25" min="0" style="width:58px" oninput="saveShipCfg();render()"> + $<input type="number" id="shipRate" value="0.20" step="0.05" min="0" style="width:52px" oninput="saveShipCfg();render()">/oz</span>
@@ -1501,6 +1501,9 @@ document.querySelectorAll('#tbl th[data-k]').forEach(th=>{
 function render(){
   const q=(document.getElementById('search').value||'').toLowerCase();
   let rows=items.filter(it=> !q || (it.title+it.sku+it.vendor+it.size+artistOf(it)).toLowerCase().includes(q));
+    (function(){ var af=document.getElementById('artistFilter'); if(!af) return; var cur=af.value; var m={}; items.forEach(function(it){ var c=(it.sku||'').split('-')[0].toUpperCase(); if(c) m[c]=artistOf(it); }); af.innerHTML='<option value="">All artists</option>'+Object.keys(m).sort().map(function(c){ return '<option value="'+c+'">'+esc(m[c])+'</option>'; }).join(''); if([].some.call(af.options,function(o){return o.value===cur;})) af.value=cur; })();
+    var __afSel=(document.getElementById('artistFilter')||{}).value||'';
+    if(__afSel){ rows=rows.filter(function(it){ return (it.sku||'').split('-')[0].toUpperCase()===__afSel; }); }
   rows.sort((a,b)=>{
     let av,bv;
     if(sortKey==='margin'){ av=marginPct(a)??-999; bv=marginPct(b)??-999; }
