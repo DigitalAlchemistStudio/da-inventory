@@ -1476,11 +1476,6 @@ function daSplitSpecial(){
   var cc=document.getElementById('asubBtn-special-count'); if(cc) cc.textContent=n?(' ('+n+')'):'';
 }
 (function(){
-  function attach(){
-    var list=document.getElementById('artistsList');
-    if(!list){ setTimeout(attach, 400); return; }
-    try{
-      var mo=new MutationObserver(function(){
   var mo=null;
   function split(){
     if(mo) mo.disconnect();
@@ -1488,14 +1483,14 @@ function daSplitSpecial(){
     var list=document.getElementById('artistsList');
     if(mo && list) mo.observe(list, {childList:true});
   }
-  function attach(){
+  function boot(){
     var list=document.getElementById('artistsList');
-    if(!list){ setTimeout(attach, 400); return; }
+    if(!list){ setTimeout(boot, 400); return; }
     mo=new MutationObserver(split);
     mo.observe(list, {childList:true});
     split();
   }
-  attach();
+  boot();
 })();
 
 function money(n){ return '$'+(n||0).toFixed(2); }
