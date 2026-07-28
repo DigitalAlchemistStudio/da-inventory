@@ -1457,7 +1457,6 @@ window.daArtistsSub=function(which){
     var b=document.getElementById(btns[k]); if(b) b.classList.toggle('active', k===which);
   });
   if(which==='arch' && window.daRenderRoster){ try{ window.daRenderRoster(); }catch(e){} }
-  if(which==='special'){ try{ daSplitSpecial(); }catch(e){} }
 };
 function daSplitSpecial(){
   var list=document.getElementById('artistsList');
