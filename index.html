@@ -380,7 +380,7 @@
     <button class="tabbtn" data-tab="documents" onclick="switchTab('documents')">Documents</button>
     <button class="tabbtn" data-tab="payouts" onclick="switchTab('payouts')">Payouts</button>
     <button class="tabbtn mgr-only" data-tab="applications" onclick="switchTab('applications')">Applications <span id="reqTabCount" class="pill warn" style="font-size:10px;padding:1px 6px;display:none;">0</span></button>
-    <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists');window.daRenderArchive&&window.daRenderArchive()">Artists</button>
+    <button class="tabbtn mgr-only" data-tab="artists" onclick="switchTab('artists')">Artists</button><button class="tabbtn mgr-only" data-tab="archived" onclick="switchTab('archived');window.daRenderRoster&&window.daRenderRoster()">Archived Artists</button>
     <button class="tabbtn mgr-only" data-tab="utilities" onclick="switchTab('utilities')">Utilities</button>
   </div>
   <div id="tab-manager" class="tabpanel active">
@@ -943,14 +943,28 @@
       <h2>🎨 Artists</h2>
       <p class="sub" style="margin:-6px 0 12px;">Every artist account, the products they’ve added, and the profit split between them and Digital Alchemists. Change an artist’s cut and it recalculates their earnings across the app.</p>
       <div id="artistsList"></div>
-      <div class="mgr-only" style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px;">
-        <h2 style="margin:0 0 4px;">🗄️ Archive &amp; roster</h2>
-        <p class="sub" style="margin:0 0 12px;">Retire artists who&rsquo;ve stopped making work &mdash; their documents &amp; payout history stay intact. An artist must be paid down to $0 before archiving. Reinstating requires a newly signed agreement.</p>
-        <div id="archiveBox"><p class="sub">Open the Artists tab to load&hellip;</p></div>
-      </div>
     </div>
   </div>
-  <div id="tab-utilities" class="tabpanel">
+  <div id="tab-archived" class="tabpanel mgr-only">
+      <style>
+      .roster-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+      .roster-fbtn{background:transparent;border:1px solid var(--border);color:var(--muted);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:20px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+      .roster-fbtn:hover{color:var(--text);border-color:var(--accent2);}
+      .roster-fbtn.on{background:var(--accent2);color:#04121f;border-color:var(--accent2);}
+      .roster-fbtn .cnt{background:rgba(0,0,0,.18);border-radius:10px;padding:0 6px;font-size:11px;}
+      .roster-fbtn.on .cnt{background:rgba(4,18,31,.25);}
+      .roster-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+      .roster-l{min-width:160px;}
+      .roster-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-left:auto;}
+      </style>
+      <div class="card">
+        <h2>🗄️ Archived Artists</h2>
+        <p class="sub" style="margin:-6px 0 12px;">Every artist and their status at a glance. Archive artists who&rsquo;ve gone inactive &mdash; their documents &amp; payout history are kept. Reinstating requires a newly signed agreement, and an artist must be paid to $0 before they can be archived.</p>
+        <div id="rosterFilters" class="roster-filters"></div>
+        <div id="rosterBox"><p class="sub">Loading&hellip;</p></div>
+      </div>
+    </div>
+    <div id="tab-utilities" class="tabpanel">
   <div class="card mgr-only" style="border-color:var(--accent2);">
     <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
     <p class="sub" style="margin:-6px 0 12px;">Import and export your catalog, push to Shopify, print barcodes, and load starter data — these used to sit in the top bar.</p>
@@ -1305,50 +1319,86 @@ function daExportMonth(fmt){
 }
 
 
-// ===== Artist archiving =====
-window.daRenderArchive = async function(){
-  var box=document.getElementById('archiveBox'); if(!box) return;
+// ===== Archived Artists / roster =====
+window.daRosterFilter = window.daRosterFilter || 'all';
+window.daSetRosterFilter = function(f){ window.daRosterFilter=f; if(window.daRenderRoster) window.daRenderRoster(); };
+window.daRosterSpecial = {COL:1, TST:1, UNASSIGNED:1, POD:1, DA:1};
+window.daRenderRoster = async function(){
+  var box=document.getElementById('rosterBox'); if(!box) return;
   if(!window.daSB){ box.innerHTML='<p class="sub">Not connected.</p>'; return; }
   box.innerHTML='<p class="sub">Loading&hellip;</p>';
   try{
-    var ar= await window.daSB.from('artists').select('code,display_name,real_name,archived,archived_at,archived_reason,reinstate_pending,reinstated_at');
-    if(ar.error) throw ar.error;
-    var op= await window.daSB.from('order_payouts').select('artist_code,artist_earn,paid');
-    var owed={};
-    (op.data||[]).forEach(function(x){ if(x && !x.paid){ var c=String(x.artist_code||'').toUpperCase(); owed[c]=(owed[c]||0)+(Number(x.artist_earn)||0); } });
-    var byCode={};
-    (ar.data||[]).forEach(function(a){ byCode[String(a.code||'').toUpperCase()]=a; });
-    Object.keys(window.daArtistMeta||{}).forEach(function(c){ c=String(c).toUpperCase(); if(c && !byCode[c]) byCode[c]={code:c, archived:false}; });
-    Object.keys(owed).forEach(function(c){ if(c && !byCode[c]) byCode[c]={code:c, archived:false}; });
-    var all=Object.keys(byCode).sort().map(function(c){ return byCode[c]; });
-    var active=all.filter(function(a){ return !a.archived; });
-    var archd=all.filter(function(a){ return a.archived; });
+    var res=await Promise.all([
+      window.daSB.from('artists').select('code,display_name,real_name,archived,archived_at,archived_reason,reinstate_pending,reinstated_at'),
+      window.daSB.from('profiles').select('artist_code,display_name,real_name'),
+      window.daSB.from('products').select('sku,artist_code'),
+      window.daSB.from('order_payouts').select('artist_code,artist_earn,paid')
+    ]);
+    if(res[0].error) throw res[0].error;
+    var arts=res[0].data||[], profs=res[1].data||[], prods=res[2].data||[], ops=res[3].data||[];
+    function codeOf(sku){ var f=String(sku||'').split(/[-_]/)[0].toUpperCase().trim(); return /^[A-Z]{2,4}$/.test(f)?f:''; }
+    var hasAcct={}, nameByCode={};
+    profs.forEach(function(p){ var c=String(p.artist_code||'').toUpperCase(); if(c){ hasAcct[c]=true; if(p.display_name||p.real_name) nameByCode[c]=p.display_name||p.real_name; } });
+    var prodCount={};
+    prods.forEach(function(p){ var c=String(p.artist_code||'').toUpperCase()||codeOf(p.sku); if(c) prodCount[c]=(prodCount[c]||0)+1; });
+    var salesCount={}, owed={};
+    ops.forEach(function(x){ var c=String(x.artist_code||'').toUpperCase(); if(!c) return; salesCount[c]=(salesCount[c]||0)+1; if(!x.paid) owed[c]=(owed[c]||0)+(Number(x.artist_earn)||0); });
+    var stateBy={};
+    arts.forEach(function(a){ stateBy[String(a.code||'').toUpperCase()]=a; });
     var meta=window.daArtistMeta||{};
-    function nm(a){ var m=meta[String(a.code||'').toUpperCase()]||{}; return m.display_name||m.real_name||a.display_name||a.code||'?'; }
-    var rowStyle='display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;';
-    var hStyle='font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 6px;';
-    var html='<div style="'+hStyle+'margin-top:0;">Active roster ('+active.length+')</div>';
-    html+= active.length? active.map(function(a){
-      var c=String(a.code||'').toUpperCase(); var ow=owed[c]||0; var blocked=ow>0.005;
-      var right= blocked
-        ? '<span class="pill warn">owes $'+ow.toFixed(2)+'</span> <button class="btn ghost sm" disabled title="Pay this artist to $0 first">Archive</button>'
-        : '<button class="btn ghost sm" data-arch="archive" data-code="'+c+'">Archive</button>';
-      return '<div style="'+rowStyle+'"><div><b>'+esc(nm(a))+'</b> <span class="a-code">'+esc(c)+'</span></div><div>'+right+'</div></div>';
-    }).join('') : '<p class="sub">No active artists.</p>';
-    html+='<div style="'+hStyle+'">Archived ('+archd.length+')</div>';
-    html+= archd.length? archd.map(function(a){
-      var c=String(a.code||'').toUpperCase();
-      var when=a.archived_at? ' &middot; archived '+String(a.archived_at).slice(0,10):'';
-      var rsn=a.archived_reason? ' &middot; '+esc(a.archived_reason):'';
-      var right= a.reinstate_pending
-        ? '<span class="pill warn">pending &mdash; needs new signed agreement</span> <button class="btn sm" data-arch="confirm" data-code="'+c+'">New agreement signed</button>'
-        : '<button class="btn ghost sm" data-arch="reinstate" data-code="'+c+'">Reinstate</button>';
-      return '<div style="'+rowStyle+'"><div><b>'+esc(nm(a))+'</b> <span class="a-code">'+esc(c)+'</span> <span class="sub">'+when+rsn+'</span></div><div><button class="btn ghost sm" data-arch="docs" data-code="'+c+'">Documents</button> '+right+'</div></div>';
-    }).join('') : '<p class="sub">No archived artists yet.</p>';
+    var codes={};
+    [Object.keys(stateBy),Object.keys(hasAcct),Object.keys(prodCount),Object.keys(salesCount),Object.keys(meta)].forEach(function(arr){ arr.forEach(function(c){ c=String(c).toUpperCase(); if(c) codes[c]=1; }); });
+    var rows=Object.keys(codes).sort().map(function(c){
+      var st=stateBy[c]||{}; var status;
+      if(st.archived) status='archived';
+      else if(!hasAcct[c]) status='noaccount';
+      else if((prodCount[c]||0)>0 || (salesCount[c]||0)>0) status='active';
+      else status='inactive';
+      var nm=(meta[c]&&meta[c].display_name)||nameByCode[c]||st.display_name||c;
+      return {code:c,status:status,name:nm,owed:owed[c]||0,archived:!!st.archived,reinstate_pending:!!st.reinstate_pending,archived_at:st.archived_at,archived_reason:st.archived_reason};
+    });
+    var special=window.daRosterSpecial||{};
+    var real=rows.filter(function(a){ return !special[a.code]; });
+    var admin=rows.filter(function(a){ return special[a.code]; });
+    var counts={all:real.length,active:0,inactive:0,noaccount:0,archived:0};
+    real.forEach(function(a){ counts[a.status]=(counts[a.status]||0)+1; });
+    var f=window.daRosterFilter||'all';
+    var defs=[['all','All'],['active','Active'],['inactive','Inactive'],['noaccount','No account'],['archived','Archived']];
+    var fbox=document.getElementById('rosterFilters');
+    if(fbox){
+      fbox.innerHTML=defs.map(function(d){ return '<button class="roster-fbtn'+(f===d[0]?' on':'')+'" data-f="'+d[0]+'">'+d[1]+' <span class="cnt">'+(counts[d[0]]||0)+'</span></button>'; }).join('');
+      fbox.querySelectorAll('[data-f]').forEach(function(b){ b.addEventListener('click', function(){ daSetRosterFilter(b.getAttribute('data-f')); }); });
+    }
+    function pill(s){
+      if(s==='active') return '<span class="pill good">Active</span>';
+      if(s==='inactive') return '<span class="pill warn">Inactive</span>';
+      if(s==='noaccount') return '<span class="pill info">No account</span>';
+      return '<span class="pill" style="background:rgba(138,166,204,.14);color:var(--muted);">Archived</span>';
+    }
+    function rowHtml(a, isAdmin){
+      var c=a.code; var actions='';
+      if(a.archived){
+        actions='<button class="btn ghost sm" data-act="docs" data-code="'+c+'">Documents</button> '+
+          (a.reinstate_pending? '<button class="btn sm" data-act="confirm" data-code="'+c+'">New agreement signed</button>'
+                              : '<button class="btn ghost sm" data-act="reinstate" data-code="'+c+'">Reinstate</button>');
+      } else if(!isAdmin){
+        actions = a.owed>0.005
+          ? '<span class="pill warn">owes $'+a.owed.toFixed(2)+'</span> <button class="btn ghost sm" disabled title="Pay to $0 first">Archive</button>'
+          : '<button class="btn ghost sm" data-act="archive" data-code="'+c+'">Archive</button>';
+      }
+      var pend=a.reinstate_pending&&!a.archived? ' <span class="pill warn">reinstatement pending</span>':'';
+      return '<div class="roster-row"><div class="roster-l"><b>'+esc(a.name)+'</b> <span class="a-code">'+esc(c)+'</span></div>'+
+        '<div class="roster-r">'+pill(a.status)+pend+' '+actions+'</div></div>';
+    }
+    var shown=real.filter(function(a){ return f==='all'?true:a.status===f; });
+    var html=shown.length? shown.map(function(a){ return rowHtml(a,false); }).join('') : '<p class="sub">No artists in this view.</p>';
+    if(admin.length){
+      html+='<details style="margin-top:18px;"><summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;">Special &middot; admin &amp; testing accounts ('+admin.length+')</summary><div style="margin-top:8px;">'+admin.map(function(a){ return rowHtml(a,true); }).join('')+'</div></details>';
+    }
     box.innerHTML=html;
-    box.querySelectorAll('[data-arch]').forEach(function(b){
+    box.querySelectorAll('[data-act]').forEach(function(b){
       b.addEventListener('click', function(){
-        var code=b.getAttribute('data-code'), act=b.getAttribute('data-arch');
+        var code=b.getAttribute('data-code'), act=b.getAttribute('data-act');
         if(act==='archive') daArchiveArtist(code);
         else if(act==='reinstate') daReinstateArtist(code);
         else if(act==='confirm') daConfirmReinstate(code);
@@ -1363,13 +1413,13 @@ async function daArchiveArtist(code){
     var op=await window.daSB.from('order_payouts').select('artist_earn,paid').eq('artist_code',code);
     var ow=(op.data||[]).reduce(function(a,x){ return a+((x&&!x.paid)?(Number(x.artist_earn)||0):0); },0);
     if(ow>0.005){ notify('Settle $'+ow.toFixed(2)+' first \u2014 pay '+code+' out in the Payouts tab before archiving.'); return; }
-    if(!confirm('Archive '+code+'? They leave the active roster. All documents and payout history are kept. You can reinstate later, which will require a newly signed agreement.')) return;
+    if(!confirm('Archive '+code+'? They leave the active roster. All documents and payout history are kept. Reinstating later requires a newly signed agreement.')) return;
     var reason=prompt('Optional note (why are they being archived?):','');
     var res=await window.daSB.from('artists').upsert({code:code, archived:true, archived_at:new Date().toISOString(), archived_reason:(reason||null), reinstate_pending:false, updated_at:new Date().toISOString()}, {onConflict:'code'});
     if(res.error) throw res.error;
     notify(code+' archived.');
     if(window.daLoadArtistMeta) await window.daLoadArtistMeta();
-    window.daRenderArchive();
+    if(window.daRenderRoster) window.daRenderRoster();
   }catch(e){ notify('Archive failed: '+(e&&e.message||e)); }
 }
 async function daReinstateArtist(code){
@@ -1380,7 +1430,7 @@ async function daReinstateArtist(code){
     if(res.error) throw res.error;
     notify(code+' reinstated \u2014 pending a newly signed agreement.');
     if(window.daLoadArtistMeta) await window.daLoadArtistMeta();
-    window.daRenderArchive();
+    if(window.daRenderRoster) window.daRenderRoster();
   }catch(e){ notify('Reinstate failed: '+(e&&e.message||e)); }
 }
 async function daConfirmReinstate(code){
@@ -1390,9 +1440,10 @@ async function daConfirmReinstate(code){
     var res=await window.daSB.from('artists').update({reinstate_pending:false, reinstated_at:new Date().toISOString(), updated_at:new Date().toISOString()}).eq('code',code);
     if(res.error) throw res.error;
     notify(code+' fully reinstated.');
-    window.daRenderArchive();
+    if(window.daRenderRoster) window.daRenderRoster();
   }catch(e){ notify('Update failed: '+(e&&e.message||e)); }
 }
+setTimeout(function(){ try{ var p=document.getElementById('tab-archived'); if(p && p.classList.contains('active') && window.daRenderRoster) window.daRenderRoster(); }catch(e){} }, 1000);
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
