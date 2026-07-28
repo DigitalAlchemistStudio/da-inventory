@@ -1475,17 +1475,23 @@ function daSplitSpecial(){
   var empty=document.getElementById('specialEmpty'); if(empty) empty.style.display=n?'none':'';
   var cc=document.getElementById('asubBtn-special-count'); if(cc) cc.textContent=n?(' ('+n+')'):'';
 }
-if(!window.__daSplitWrapped){
-  window.__daSplitWrapped=true;
-  setTimeout(function(){
-    if(window.daRenderArtists && !window.daRenderArtists.__wrapped){
-      var _r=window.daRenderArtists;
-      window.daRenderArtists=function(){ var o=_r.apply(this,arguments); try{ daSplitSpecial(); }catch(e){} return o; };
-      window.daRenderArtists.__wrapped=true;
-    }
+(function(){
+  function attach(){
+    var list=document.getElementById('artistsList');
+    if(!list){ setTimeout(attach, 400); return; }
+    try{
+      var mo=new MutationObserver(function(){
+        if(window.__splitting) return;
+        window.__splitting=true;
+        try{ daSplitSpecial(); }catch(e){}
+        window.__splitting=false;
+      });
+      mo.observe(list, {childList:true});
+    }catch(e){}
     try{ daSplitSpecial(); }catch(e){}
-  }, 0);
-}
+  }
+  attach();
+})();
 
 function money(n){ return '$'+(n||0).toFixed(2); }
 
