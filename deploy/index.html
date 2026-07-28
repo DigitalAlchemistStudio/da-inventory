@@ -1021,6 +1021,13 @@
     <div class="card mgr-only" style="border-color:var(--warn);">
       <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
       <p class="sub" style="margin:-6px 0 12px;">Real earnings computed from Shopify orders: (price − discount − refund) − manufacture cost − fees − shipping, then split by each artist's rate. Mark rows paid once you've sent the money.</p>
+      <div class="mgr-only" style="display:flex;align-items:center;gap:8px;margin:0 0 4px;flex-wrap:wrap;">
+        <span class="sub">💰 Payout threshold (Twitch&#8209;style):</span>
+        <span>$</span><input id="poThreshold" type="number" min="0" step="5" value="50" style="width:80px;padding:6px 8px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);">
+        <button class="btn ghost sm" onclick="daSaveThreshold()">Save</button>
+        <button class="btn ghost sm" onclick="daPayAllEligible()">Pay all eligible</button>
+      </div>
+      <p class="sub" style="margin:0 0 12px;">Earnings roll up per artist. An artist becomes payable once their balance passes the threshold; each payout is stamped with the current month.</p>
       <div id="payoutSummary" class="grid"></div>
       <div style="display:flex;gap:8px;align-items:center;margin:14px 0 8px;flex-wrap:wrap;">
         <span class="sub">Show:</span>
@@ -2723,6 +2730,11 @@ window.daRenderAllArtistDocs=function(){
 
   window.daLoadPayouts = function(){
     if(!window.daSB){ return; }
+    window.daSB.from('payout_settings').select('payout_threshold').eq('id',1).maybeSingle().then(function(r){
+      window.daPayoutThreshold = (r && r.data && r.data.payout_threshold!=null) ? Number(r.data.payout_threshold) : 50;
+      var el=document.getElementById('poThreshold'); if(el && document.activeElement!==el){ el.value=window.daPayoutThreshold; }
+      if(typeof window.daRenderPayouts==='function') window.daRenderPayouts();
+    });
     window.daSB.from('order_payouts').select('*').order('processed_at',{ascending:false}).then(function(r){
       if(r.error){ console.error('order_payouts', r.error); return; }
       window.daPayouts = r.data || [];
@@ -2734,24 +2746,48 @@ window.daRenderAllArtistDocs=function(){
 
   window.daMarkPaid = function(id, paid){
     if(!window.daSB){ return; }
-    var patch = paid ? { paid:true, paid_at:new Date().toISOString() } : { paid:false, paid_at:null };
+    var patch = paid ? { paid:true, paid_at:new Date().toISOString(), paid_batch:new Date().toISOString().slice(0,7) } : { paid:false, paid_at:null, paid_batch:null };
     window.daSB.from('order_payouts').update(patch).eq('id', id).then(function(r){
       if(r.error){ notify('Could not update: '+r.error.message); return; }
       var row=(window.daPayouts||[]).find(function(x){return x.id===id;});
-      if(row){ row.paid=patch.paid; row.paid_at=patch.paid_at; }
+      if(row){ row.paid=patch.paid; row.paid_at=patch.paid_at; row.paid_batch=patch.paid_batch; }
       window.daRenderPayouts(); notify(paid?'Marked paid.':'Marked unpaid.');
     });
   };
 
-  window.daMarkArtistPaid = function(code){
-    var rows=(window.daPayouts||[]).filter(function(x){return (x.artist_code||'')===code && !x.paid;});
-    if(!rows.length){ return; }
-    if(!confirm('Mark all '+rows.length+' unpaid item(s) for '+code+' as paid?')){ return; }
-    var now=new Date().toISOString(); var ids=rows.map(function(x){return x.id;});
-    window.daSB.from('order_payouts').update({paid:true,paid_at:now}).in('id',ids).then(function(r){
+  function daPayRows(rows, label){
+    if(!rows.length){ notify('Nothing payable'+(label?' for '+label:'')+'.'); return; }
+    var total=rows.reduce(function(a,x){ return a+(Number(x.artist_earn)||0); },0);
+    var thr=Number(window.daPayoutThreshold)||0;
+    var batch=new Date().toISOString().slice(0,7);
+    var msg='Pay '+money(total)+(label?' to '+label:'')+' ('+rows.length+' item'+(rows.length>1?'s':'')+', batch '+batch+')?';
+    if(thr>0 && total<thr){ msg='Heads up: '+money(total)+' is below your '+money(thr)+' payout threshold.\n\n'+msg; }
+    if(!confirm(msg)){ return; }
+    var now=new Date().toISOString(); var ids=rows.map(function(x){ return x.id; });
+    window.daSB.from('order_payouts').update({paid:true,paid_at:now,paid_batch:batch}).in('id',ids).then(function(r){
       if(r.error){ notify('Could not update: '+r.error.message); return; }
-      rows.forEach(function(x){ x.paid=true; x.paid_at=now; });
-      window.daRenderPayouts(); notify('Marked '+ids.length+' item(s) paid for '+code+'.');
+      rows.forEach(function(x){ x.paid=true; x.paid_at=now; x.paid_batch=batch; });
+      window.daRenderPayouts(); notify('Paid '+money(total)+(label?' to '+label:'')+' ('+batch+').');
+    });
+  }
+  window.daPayArtist = function(code){
+    var rows=(window.daPayouts||[]).filter(function(x){ return (x.artist_code||'')===code && !x.paid && Number(x.artist_earn)>0; });
+    daPayRows(rows, code);
+  };
+  window.daPayAllEligible = function(){
+    var thr=Number(window.daPayoutThreshold)||0;
+    var sums=summarize(window.daPayouts||[]);
+    var codes={}; sums.forEach(function(s){ if(s.owed>0 && (thr<=0 || s.owed>=thr)){ codes[s.code]=true; } });
+    if(!Object.keys(codes).length){ notify('No artists are over the '+money(thr)+' threshold yet.'); return; }
+    var rows=(window.daPayouts||[]).filter(function(x){ return codes[x.artist_code||''] && !x.paid && Number(x.artist_earn)>0; });
+    daPayRows(rows, Object.keys(codes).length+' eligible artist(s)');
+  };
+  window.daSaveThreshold = function(){
+    var el=document.getElementById('poThreshold'); if(!el || !window.daSB){ return; }
+    var v=Math.max(0, Number(el.value)||0);
+    window.daSB.from('payout_settings').update({payout_threshold:v, updated_at:new Date().toISOString()}).eq('id',1).then(function(r){
+      if(r.error){ notify('Could not save threshold: '+r.error.message); return; }
+      window.daPayoutThreshold=v; window.daRenderPayouts(); notify('Payout threshold set to '+money(v)+'.');
     });
   };
 
@@ -2781,7 +2817,8 @@ window.daRenderAllArtistDocs=function(){
   function mgrRow(x){
     var rs=payoutReasonMgr(x);
     var negP=Number(x.profit)<0, negB=Number(x.business_earn)<0;
-    var status=Number(x.refund)>0?'<span class="pill">Refunded</span>':(x.paid?'<span class="pill">Paid</span>':'<span class="pill warn">Unpaid</span>');
+    var status=Number(x.refund)>0?'<span class="pill">Refunded</span>':(x.paid?'<span class="pill">Paid</span>':(Number(x.artist_earn)>0?'<span class="pill warn">Unpaid</span>':'<span class="pill" style="opacity:.6;">No payout</span>'));
+    var canPay=!(Number(x.refund)>0)&&Number(x.artist_earn)>0;
     var main='<tr>'
       +'<td>'+esc(x.order_name||x.shopify_order_id)+'</td>'
       +'<td>'+esc(x.title||'')+'<div class="sub" style="font-size:11px;">'+esc(x.sku||'')+'</div></td>'
@@ -2797,7 +2834,7 @@ window.daRenderAllArtistDocs=function(){
       +'<td>'+status+'</td>'
       +'<td>'+(x.paid
           ? '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',false)">Undo</button>'
-          : '<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',true)">Mark paid</button>')+'</td>'
+          : (canPay?'<button class="btn ghost sm" onclick="daMarkPaid('+x.id+',true)">Mark paid</button>':'<span class="sub">—</span>'))+'</td>'
       +'</tr>';
     var note=rs?'<tr><td colspan="13" style="padding:0 10px 8px;color:var(--muted);font-size:11.5px;border-top:none;text-align:center;">↳ '+esc(rs)+'</td></tr>':'';
     return main+note;
@@ -2834,14 +2871,26 @@ window.daRenderAllArtistDocs=function(){
     var tblBox=document.getElementById('payoutTable');
     if(mgr && sumBox && tblBox){
       var sums=summarize(all);
+      var thr=Number(window.daPayoutThreshold)||0;
       if(!sums.length){ sumBox.innerHTML='<p class="sub">No orders recorded yet. Once the webhook is live, sold items appear here automatically.</p>'; }
       else {
         sumBox.innerHTML=sums.map(function(s){
-          return '<div class="stat" style="text-align:left;min-width:150px;">'
+          var ready = thr>0 ? (s.owed>=thr) : (s.owed>0);
+          var pct = thr>0 ? Math.min(100, Math.round(s.owed/thr*100)) : (s.owed>0?100:0);
+          var remain = Math.max(0, thr - s.owed);
+          var statusLine = (thr<=0) ? (s.owed>0?'ready to pay':'nothing owed')
+            : (ready ? 'Ready to pay out' : money(remain)+' to reach '+money(thr));
+          var bar='<div style="height:6px;background:var(--panel2);border-radius:4px;margin:8px 0 6px;overflow:hidden;"><div style="height:100%;width:'+pct+'%;background:'+(ready?'var(--good)':'var(--accent2)')+';"></div></div>';
+          var btn = s.owed<=0 ? ''
+            : (ready
+                ? '<button class="btn ghost sm" style="margin-top:4px;background:var(--good);color:#04121f;border-color:var(--good);" onclick="daPayArtist(\''+esc(s.code)+'\')">Pay out '+money(s.owed)+'</button>'
+                : '<button class="btn ghost sm" style="margin-top:4px;" onclick="daPayArtist(\''+esc(s.code)+'\')">Pay anyway</button>');
+          return '<div class="stat" style="text-align:left;min-width:190px;">'
             +'<div class="l" style="text-transform:none;font-weight:700;">'+esc(s.code)+'</div>'
-            +'<div class="n" style="color:var(--warn);">'+money(s.owed)+'</div>'
-            +'<div class="l">owed &middot; '+money(s.life)+' lifetime</div>'
-            +(s.owed>0?'<button class="btn ghost sm" style="margin-top:8px;" onclick="daMarkArtistPaid(\''+esc(s.code)+'\')">Mark all paid</button>':'')
+            +'<div class="n" style="color:'+(ready?'var(--good)':'var(--warn)')+';">'+money(s.owed)+'</div>'
+            +bar
+            +'<div class="l">'+statusLine+' &middot; '+money(s.life)+' lifetime</div>'
+            +btn
             +'</div>';
         }).join('');
       }
