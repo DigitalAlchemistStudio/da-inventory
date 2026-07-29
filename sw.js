@@ -2,7 +2,7 @@
 // Network-first for the app HTML so you always get the latest deploy; cache
 // fallback keeps the shell usable offline. Cross-origin calls (Supabase, CDNs)
 // are never intercepted, so live data always goes to the network.
-const CACHE = 'da-guild-v18';
+const CACHE = 'da-guild-v19';
 const SHELL = [
   './',
   './index.html',
