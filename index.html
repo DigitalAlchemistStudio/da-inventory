@@ -2195,7 +2195,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
   var nm = String(prof.display_name||prof.artist_code||'?');
   var initials = (nm.trim().charAt(0)||'?').toUpperCase();
   var inner = prof.avatar_url ? '<img src="'+prof.avatar_url+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : esc(initials);
-  chip.innerHTML = '<span id="daAvatarBtn" title="Upload / change avatar" onclick="daPickAvatar()" style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2,#0a2c46);border:1px solid var(--accent2,#56CCDA);cursor:pointer;font-size:12px;font-weight:800;color:var(--accent2,#56CCDA);margin-right:3px;flex:none;">'+inner+'</span>'
+  chip.innerHTML = '<span id="daAvatarBtn" title="Upload / change avatar" onclick="daPickAvatar()" style="width:40px;height:40px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2,#0a2c46);border:1px solid var(--accent2,#56CCDA);cursor:pointer;font-size:16px;font-weight:800;color:var(--accent2,#56CCDA);margin-right:6px;flex:none;">'+inner+'</span>'
     +'<b>'+esc(prof.display_name||'Artist')+'</b><span class="code">'+esc(prof.artist_code||'?')+'</span><span id="acctSync" style="color:var(--muted);font-size:11px;"></span>';
 };
 window.daPickAvatar = function(){ var i=document.getElementById('daAvatarInput'); if(i){ i.value=''; i.click(); } };
