@@ -368,7 +368,7 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-    <span class="acct-chip" id="owedChip" style="display:none;"></span><input type="file" id="daAvatarInput" accept="image/*" style="display:none" onchange="daOnAvatarFile(event)"><span class="acct-chip" id="acctChip" style="display:none;"></span>
+    <input type="file" id="daAvatarInput" accept="image/*" style="display:none" onchange="daOnAvatarFile(event)"><span class="acct-chip" id="acctChip" style="display:none;"></span>
     <button class="btn ghost sm" id="signOutBtn" style="display:none;" onclick="daSignOut()">Sign out</button>
   </div>
 </header>
@@ -2191,12 +2191,16 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
   window.daRenderAcct = function(){
   var prof = window.daProfile||{};
   var chip = document.getElementById('acctChip'); if(!chip) return;
-  chip.style.display='inline-flex';
+  chip.style.display='inline-flex'; chip.style.alignItems='center'; chip.style.padding='12px'; chip.style.gap='12px';
   var nm = String(prof.display_name||prof.artist_code||'?');
   var initials = (nm.trim().charAt(0)||'?').toUpperCase();
   var inner = prof.avatar_url ? '<img src="'+prof.avatar_url+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:18px;">' : esc(initials);
-  chip.innerHTML = '<span id="daAvatarBtn" title="Upload / change avatar" onclick="daPickAvatar()" style="width:100px;height:100px;border-radius:18px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2,#0a2c46);border:1px solid var(--accent2,#56CCDA);cursor:pointer;font-size:36px;font-weight:800;color:var(--accent2,#56CCDA);margin-right:8px;flex:none;">'+inner+'</span>'
-    +'<b>'+esc(prof.display_name||'Artist')+'</b><span class="code">'+esc(prof.artist_code||'?')+'</span><span id="acctSync" style="color:var(--muted);font-size:11px;"></span>';
+  chip.innerHTML = '<span id="daAvatarBtn" title="Upload / change avatar" onclick="daPickAvatar()" style="width:100px;height:100px;border-radius:18px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2,#0a2c46);border:1px solid var(--accent2,#56CCDA);cursor:pointer;font-size:36px;font-weight:800;color:var(--accent2,#56CCDA);flex:none;">'+inner+'</span>'
+    +'<span style="display:inline-flex;flex-direction:column;justify-content:center;gap:5px;line-height:1.2;">'
+      +'<span><b>'+esc(prof.display_name||'Artist')+'</b><span class="code" style="margin-left:6px;">'+esc(prof.artist_code||'?')+'</span></span>'
+      +'<span id="owedChip" style="display:none;"></span>'
+      +'<span id="acctSync" style="color:var(--muted);font-size:11px;"></span>'
+    +'</span>';
 };
 window.daPickAvatar = function(){ var i=document.getElementById('daAvatarInput'); if(i){ i.value=''; i.click(); } };
 window.daOnAvatarFile = function(ev){
@@ -2212,7 +2216,7 @@ window.daOnAvatarFile = function(ev){
     if(!(window.daSB && window.daProfile && window.daProfile.id)){ (window.notify||function(){})('Not signed in.'); return; }
     window.daSB.from('profiles').update({avatar_url:data}).eq('id', window.daProfile.id).then(function(r){
       if(r.error){ (window.notify||function(){})('Avatar save failed: '+r.error.message); return; }
-      window.daProfile.avatar_url = data; if(window.daRenderAcct) window.daRenderAcct(); (window.notify||function(){})('Avatar updated.');
+      window.daProfile.avatar_url = data; if(window.daRenderAcct) window.daRenderAcct(); if(window.daRenderPayouts) window.daRenderPayouts(); (window.notify||function(){})('Avatar updated.');
     });
   };
   img.onerror=function(){ (window.notify||function(){})('Could not read that image.'); };
