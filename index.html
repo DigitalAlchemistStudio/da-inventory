@@ -3319,7 +3319,7 @@ window.daRenderAllArtistDocs=function(){
   function payoutReasonArtist(x){
     if(Number(x.refund)>0) return 'This order was refunded, so there is no payout.';
     if(Number(x.artist_earn)===0 && Number(x.profit)<0) return 'No payout - this order did not clear its costs.';
-    if(Number(x.artist_share)===0) return 'No artist share is set on this item.';
+    if(Number(x.artist_share)===0 && Number(x.artist_earn)===0) return 'No artist share is set on this item.';
     return '';
   }
   function mgrRow(x){
