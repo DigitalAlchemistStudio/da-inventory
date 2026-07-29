@@ -1040,6 +1040,11 @@
   </div>
   <div id="tab-payouts" class="tabpanel">
       
+    <div class="card">
+      <h2>💰 My earnings</h2>
+      <p class="sub" style="margin:-6px 0 12px;">Your share of the profit on every order that included your work. Amounts marked paid have already been sent to you.</p>
+      <div id="myPayouts"></div>
+    </div>
     <div class="card mgr-only" style="">
       <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
       <p class="sub" style="margin:-6px 0 12px;">Real earnings computed from Shopify orders: (price − discount − refund) − manufacture cost − fees − shipping, then split by each artist's rate. Mark rows paid once you've sent the money.</p>
@@ -1062,11 +1067,7 @@
       </div>
       <div id="payoutTable"></div>
     </div>
-    <div class="card">
-      <h2>💰 My earnings</h2>
-      <p class="sub" style="margin:-6px 0 12px;">Your share of the profit on every order that included your work. Amounts marked paid have already been sent to you.</p>
-      <div id="myPayouts"></div>
-    </div>
+    
     <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs){daRenderCollabs();if(window.daRenderCollabSales)daRenderCollabSales();}" style="margin-bottom:22px;">
         <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
         <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
@@ -3381,14 +3382,7 @@ window.daRenderAllArtistDocs=function(){
       if(!mine.length){ myBox.innerHTML=head+'<p class="sub">No sales recorded yet. When an order includes your work, your share shows up here.</p>'; }
       else {
         var mActive=mine.filter(function(x){ return !(Number(x.refund)>0); });
-        var mReturned=mine.filter(function(x){ return Number(x.refund)>0; });
-        var h2=head + (mActive.length?artTable(mActive):'<p class="sub">No active sales yet.</p>');
-        if(mReturned.length){
-          h2 += '<h2 style="font-size:15px;margin:18px 0 2px;">↩︎ Returned</h2>'
-             +  '<p class="sub" style="margin:0 0 8px;">These orders were refunded, so there is no payout on them.</p>'
-             +  artTable(mReturned);
-        }
-        myBox.innerHTML=h2;
+        myBox.innerHTML=head + (mActive.length?artTable(mActive):'<p class="sub">No active sales yet.</p>');
       }
     }
   };
