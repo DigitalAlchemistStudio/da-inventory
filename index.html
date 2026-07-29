@@ -2919,16 +2919,28 @@ window.daCollabProductsHtml = function(code){
     var avg=codes.reduce(function(a,c){return a+shareOf(c);},0)/codes.length;
     var prods=allItems.filter(function(it){ return dz(it.sku)===dk; });
     if(prods.length){
-      prods.forEach(function(it){ var pr=Number(it.price)||0, co=Number(it.cost)||0, pf=Math.max(0,pr-co); var each=(avg*pf)/codes.length; var img=it.thumb?('<img class="thumb" src="'+it.thumb+'" alt="">'):''; rows+='<tr><td style="text-align:left;">'+esc(it.sku)+'</td><td style="text-align:left;">'+esc(it.title||'')+'</td><td>'+img+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+who+'</td><td>'+money(pr)+'</td><td class="payout">'+money(each)+'</td></tr>'; });
+      prods.forEach(function(it){ var pr=Number(it.price)||0, co=Number(it.cost)||0, pf=Math.max(0,pr-co); var each=(avg*pf)/codes.length; var img=it.thumb?('<img class="thumb" src="'+it.thumb+'" alt="">'):''; var stage=it.stage||it.status||'submitted'; rows+='<tr><td style="text-align:left;">'+esc(it.sku)+'</td><td style="text-align:left;">'+esc(it.title||'')+'</td><td>'+img+'</td><td>'+esc(it.size||'')+'</td><td>'+esc(stage)+'</td><td>'+esc(String(parseInt(it.qty)||0))+'</td><td>'+who+'</td><td>'+money(pr)+'</td><td class="payout">'+money(each)+'</td></tr>'; });
     } else {
-      rows+='<tr><td style="text-align:left;">'+esc(dk)+'</td><td style="text-align:left;" class="sub">(not in catalog yet)</td><td></td><td></td><td></td><td>'+who+'</td><td>\u2014</td><td>\u2014</td></tr>';
+      rows+='<tr><td style="text-align:left;">'+esc(dk)+'</td><td style="text-align:left;" class="sub">(not in catalog yet)</td><td></td><td></td><td></td><td></td><td>'+who+'</td><td>\u2014</td><td>\u2014</td></tr>';
     }
   });
   return '<div style="margin-top:14px;">'
     +'<h3 style="font-size:14px;margin:0 0 4px;color:var(--accent2);">\uD83E\uDD1D Collaboration products</h3>'
     +'<p class="sub" style="margin:0 0 8px;">Designs this artist shares with others. Sale profit splits evenly among the collaborators \u2014 see Payouts for actual earnings.</p>'
-    +'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Img</th><th>Size</th><th>Qty</th><th>Collaborators</th><th>Price</th><th>Your share / unit</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Img</th><th>Size</th><th>Stage</th><th>Qty</th><th>Collaborators</th><th>Price</th><th>Your share / unit</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
   +'</div>';
+};
+window.daCollabProductCount = function(code){
+  var ucode=String(code||'').toUpperCase();
+  var map=window.daCollabMap||{};
+  if(!map||!Object.keys(map).length) return 0;
+  function dz(x){ return String(x||'').toUpperCase().replace(/-[0-9]{1,4}$/,''); }
+  var designs={};
+  Object.keys(map).forEach(function(k){ var codes=(map[k]||[]).map(function(c){return String(c).toUpperCase();}); if(codes.indexOf(ucode)>=0) designs[dz(k)]=1; });
+  if(!Object.keys(designs).length) return 0;
+  var allItems=(typeof items!=='undefined'&&items)?items:[];
+  var n=0; allItems.forEach(function(it){ if(designs[dz(it.sku)]) n++; });
+  return n;
 };
 window.daRenderArtists=function(){
   var box=document.getElementById('artistsList'); if(!box) return;
@@ -2942,6 +2954,7 @@ window.daRenderArtists=function(){
     var mine=p.unassigned
       ? allItems.filter(function(it){ var c=window.daArtistCodeOf(it); return !c || !window.daIsArtistCode(c); })
       : allItems.filter(function(it){ return window.daArtistCodeOf(it)===ucode; });
+    var ccount=(typeof window.daCollabProductCount==='function'?window.daCollabProductCount(ucode):0); var pcount=mine.length+ccount;
     var share=(p.artist_share!=null?p.artist_share:0.40);
     var apct=Math.round(share*100), dpct=100-apct;
     var rev=0, earn=0, profit=0, qty=0;
@@ -2957,12 +2970,12 @@ window.daRenderArtists=function(){
     return '<details class="artist-card">'
       +'<summary>'
         +'<span class="a-name">'+esc(p.display_name||code)+'<span class="a-code">'+esc(code)+'</span>'+(p.real_name?'<span class="a-real" style="display:block;font-size:11px;color:var(--muted,#8aa6cc);font-weight:400;margin-top:1px;">'+esc(p.real_name)+'</span>':'')+'</span>'
-        +'<span class="a-meta">'+mine.length+' product'+(mine.length===1?'':'s')+' &nbsp;·&nbsp; Artist '+apct+'% / DA '+dpct+'% &nbsp;·&nbsp; earns '+money(earn)+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--warn,#e0a030)">no account yet</span>':'')+'</span>'
+        +'<span class="a-meta">'+pcount+' product'+(pcount===1?'':'s')+' &nbsp;·&nbsp; Artist '+apct+'% / DA '+dpct+'% &nbsp;·&nbsp; earns '+money(earn)+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--warn,#e0a030)">no account yet</span>':'')+'</span>'
       +'</summary>'
       +'<div class="a-body">'
         +(p.unassigned?'':'<div style="text-align:right;margin:-2px 0 6px;"><button class="btn ghost sm" onclick="daEditArtist(\''+esc(code)+'\')">\u270e Edit artist</button></div>')
         +'<div class="a-stats">'
-          +'<div><b>'+mine.length+'</b><span>products</span></div>'
+          +'<div><b>'+pcount+'</b><span>products</span></div>'
           +'<div><b>'+qty+'</b><span>units on hand</span></div>'
           +'<div><b>'+money(rev)+'</b><span>potential revenue</span></div>'
           +'<div><b>'+money(profit)+'</b><span>total profit</span></div>'
