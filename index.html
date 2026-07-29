@@ -3421,9 +3421,19 @@ window.daRenderAllArtistDocs=function(){
 
     var myBox=document.getElementById('myPayouts');
     if(myBox){
-      var mine=all;
       var code=(window.daProfile&&window.daProfile.artist_code)||window.DA_ARTIST||'';
-      if(mgr && code){ mine=all.filter(function(x){ return (x.artist_code||'')===code; }); }
+      var ucode=String(code||'').toUpperCase();
+      var mine;
+      if(code){
+        mine=[];
+        all.forEach(function(x){
+          var sp=(typeof daCollabSplit==='function')?daCollabSplit(x):null;
+          var e=0, isMine=false;
+          if(sp && sp.codes.indexOf(ucode)>=0){ isMine=true; e=sp.each; }
+          else if(String(x.artist_code||'').toUpperCase()===ucode){ isMine=true; e=Number(x.artist_earn)||0; }
+          if(isMine){ var r={}; for(var k in x){ r[k]=x[k]; } r.artist_earn=e; mine.push(r); }
+        });
+      } else { mine=all; }
       var owed=0, life=0;
       mine.forEach(function(x){ life+=Number(x.artist_earn)||0; if(!x.paid){ owed+=Number(x.artist_earn)||0; } });
       (function(){ var oc=document.getElementById('owedChip'); if(oc){ if(code && owed>0.005){ oc.style.display='inline-flex'; oc.innerHTML='<b>You\u2019re owed</b><span class="code" style="background:var(--payout);color:#04101f;font-weight:800;">'+money(owed)+'</span>'; } else { oc.style.display='none'; } } })();
