@@ -1603,8 +1603,17 @@ window.daLoadCollabMap = async function(){
   if(typeof window.daRenderPayouts==='function') window.daRenderPayouts();
 };
 function daCollabShare(c){ c=String(c).toUpperCase(); return (window.daShareMap && window.daShareMap[c]!=null)? Number(window.daShareMap[c]) : (Number(window.DA_SHARE)||0.4); }
+window.daCollabCodesFor = function(sku){
+  var map = window.daCollabMap||{};
+  var S = String(sku||'').toUpperCase();
+  if(map[S] && map[S].length) return map[S];
+  function design(x){ return String(x).toUpperCase().replace(/-[0-9]{1,4}$/,''); }
+  var ds = design(S);
+  for(var k in map){ if(design(k)===ds && map[k] && map[k].length) return map[k]; }
+  return null;
+};
 function daCollabSplit(row){
-  var codes=(window.daCollabMap||{})[String(row&&row.sku||'').toUpperCase()];
+  var codes=(window.daCollabCodesFor?window.daCollabCodesFor(row&&row.sku):(window.daCollabMap||{})[String(row&&row.sku||'').toUpperCase()]);
   if(!codes||!codes.length) return null;
   var profit=Math.max(Number(row.profit)||0,0);
   var avg=codes.reduce(function(a,c){return a+daCollabShare(c);},0)/codes.length;
@@ -1646,7 +1655,7 @@ window.daRenderCollabSales = function(){
   if(!box) return;
   var map = window.daCollabMap || {};
   if(!Object.keys(map).length){ box.innerHTML=''; return; }
-  var rows = (window.daPayouts||[]).filter(function(x){ return map[String(x.sku||'').toUpperCase()]; });
+  var rows = (window.daPayouts||[]).filter(function(x){ return window.daCollabCodesFor?window.daCollabCodesFor(x.sku):map[String(x.sku||'').toUpperCase()]; });
   var unpaid = rows.filter(function(x){ return !x.paid; });
   var paidRows = rows.filter(function(x){ return x.paid; });
   function line(x, isPaid){
