@@ -2900,6 +2900,36 @@ window.daArtistBuckets=function(){
   if(hasUnassigned){ profs.push({id:null,artist_code:'UNASSIGNED',display_name:'Unassigned / POD',artist_share:0,email:'',noAccount:true,unassigned:true}); }
   return profs;
 };
+window.daCollabProductsHtml = function(code){
+  var ucode = String(code||'').toUpperCase();
+  var map = window.daCollabMap||{};
+  if(!map || !Object.keys(map).length) return '';
+  function dz(x){ return String(x||'').toUpperCase().replace(/-[0-9]{1,4}$/,''); }
+  function shareOf(c){ c=String(c).toUpperCase(); var m=window.daShareMap||{}; return (m[c]!=null?Number(m[c]):(window.DA_SHARE!=null?Number(window.DA_SHARE):0.5)); }
+  var myDesigns = {};
+  Object.keys(map).forEach(function(k){ var codes=(map[k]||[]).map(function(c){return String(c).toUpperCase();}); if(codes.indexOf(ucode)>=0) myDesigns[dz(k)]=codes; });
+  var dks = Object.keys(myDesigns);
+  if(!dks.length) return '';
+  var allItems=(typeof items!=='undefined'&&items)?items:[];
+  function money(n){ return '$'+(Number(n)||0).toFixed(2); }
+  var rows='';
+  dks.forEach(function(dk){
+    var codes=myDesigns[dk];
+    var who=codes.map(function(c){return c===ucode?'<b>you</b>':esc(c);}).join(' + ');
+    var avg=codes.reduce(function(a,c){return a+shareOf(c);},0)/codes.length;
+    var prods=allItems.filter(function(it){ return dz(it.sku)===dk; });
+    if(prods.length){
+      prods.forEach(function(it){ var pr=Number(it.price)||0, co=Number(it.cost)||0, pf=Math.max(0,pr-co); var each=(avg*pf)/codes.length; rows+='<tr><td style="text-align:left;">'+esc(it.sku)+'</td><td style="text-align:left;">'+esc(it.title||'')+'</td><td>'+who+'</td><td>'+money(pr)+'</td><td class="payout">'+money(each)+'</td></tr>'; });
+    } else {
+      rows+='<tr><td style="text-align:left;">'+esc(dk)+'</td><td style="text-align:left;" class="sub">(not in catalog yet)</td><td>'+who+'</td><td>\u2014</td><td>\u2014</td></tr>';
+    }
+  });
+  return '<div style="margin-top:14px;">'
+    +'<h3 style="font-size:14px;margin:0 0 4px;color:var(--accent2);">\uD83E\uDD1D Collaboration products</h3>'
+    +'<p class="sub" style="margin:0 0 8px;">Designs this artist shares with others. Sale profit splits evenly among the collaborators \u2014 see Payouts for actual earnings.</p>'
+    +'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">SKU</th><th style="text-align:left;">Title</th><th>Collaborators</th><th>Price</th><th>Your share / unit</th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+  +'</div>';
+};
 window.daRenderArtists=function(){
   var box=document.getElementById('artistsList'); if(!box) return;
   var profs=window.daArtistBuckets();
@@ -2943,6 +2973,7 @@ window.daRenderArtists=function(){
           ? '<div class="a-cut" style="color:var(--muted)">POD / dropship &amp; unassigned SKUs — no artist, so no profit split. Give a product an artist code to move it into that artist’s card.</div>'
           : '<div class="a-cut"><b>Cut:</b> <input type="number" min="0" max="100" step="1" value="'+apct+'" '+(p.noAccount?'disabled title="Set once this artist has an account"':'onchange="daSaveRate(\''+p.id+'\',this.value)"')+'> % artist &nbsp;/&nbsp; <span style="color:var(--accent2)">'+dpct+'%</span> Digital Alchemists'+(p.noAccount?' &nbsp;·&nbsp; <span style="color:var(--muted)">default 40% until account created</span>':(p.email?(' &nbsp;·&nbsp; <span style="color:var(--muted)">'+esc(p.email)+'</span>'):''))+'</div>')
         +table
+        +(typeof daCollabProductsHtml==='function'?daCollabProductsHtml(code):'')
         +((!p.unassigned && typeof daArtistDocsHtml==='function')?daArtistDocsHtml(code):'')
       +'</div>'
     +'</details>';
