@@ -368,7 +368,7 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-    <span class="acct-chip" id="acctChip" style="display:none;"></span>
+    <span class="acct-chip" id="owedChip" style="display:none;"></span><span class="acct-chip" id="acctChip" style="display:none;"></span>
     <button class="btn ghost sm" id="signOutBtn" style="display:none;" onclick="daSignOut()">Sign out</button>
   </div>
 </header>
@@ -1039,15 +1039,7 @@
     </div>
   </div>
   <div id="tab-payouts" class="tabpanel">
-      <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs){daRenderCollabs();if(window.daRenderCollabSales)daRenderCollabSales();}" style="margin-bottom:22px;">
-        <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
-        <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-          <select id="collabPickSku" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;"><option value="">Select a collab SKU&hellip;</option></select>
-          <button class="btn ghost sm" onclick="daCollabAdd()">Add collab SKU</button>
-        </div>
-        <div id="collabBox"><p class="sub">Open to load&hellip;</p></div><div id="collabSalesBox"></div>
-      </details>
+      
     <div class="card mgr-only" style="">
       <h2 style="display:flex;align-items:center;gap:8px;">💸 Payouts from orders</h2>
       <p class="sub" style="margin:-6px 0 12px;">Real earnings computed from Shopify orders: (price − discount − refund) − manufacture cost − fees − shipping, then split by each artist's rate. Mark rows paid once you've sent the money.</p>
@@ -1075,6 +1067,15 @@
       <p class="sub" style="margin:-6px 0 12px;">Your share of the profit on every order that included your work. Amounts marked paid have already been sent to you.</p>
       <div id="myPayouts"></div>
     </div>
+    <details class="card mgr-only" ontoggle="if(this.open&&window.daRenderCollabs){daRenderCollabs();if(window.daRenderCollabSales)daRenderCollabSales();}" style="margin-bottom:22px;">
+        <summary style="cursor:pointer;font-size:16px;color:var(--accent2);font-weight:700;">🤝 Collaborations &mdash; even split</summary>
+        <p class="sub" style="margin:8px 0 12px;">Tag a SKU as a collaboration and tick the artists who share it. When it sells, the artist pool (average of their cut rates &times; profit) is divided evenly among them.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+          <select id="collabPickSku" style="flex:1;min-width:220px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 11px;"><option value="">Select a collab SKU&hellip;</option></select>
+          <button class="btn ghost sm" onclick="daCollabAdd()">Add collab SKU</button>
+        </div>
+        <div id="collabBox"><p class="sub">Open to load&hellip;</p></div><div id="collabSalesBox"></div>
+      </details>
   </div>
 </div>
 
@@ -3371,6 +3372,7 @@ window.daRenderAllArtistDocs=function(){
       if(mgr && code){ mine=all.filter(function(x){ return (x.artist_code||'')===code; }); }
       var owed=0, life=0;
       mine.forEach(function(x){ life+=Number(x.artist_earn)||0; if(!x.paid){ owed+=Number(x.artist_earn)||0; } });
+      (function(){ var oc=document.getElementById('owedChip'); if(oc){ if(code && owed>0.005){ oc.style.display='inline-flex'; oc.innerHTML='<b>You\u2019re owed</b><span class="code" style="background:var(--payout);color:#04101f;font-weight:800;">'+money(owed)+'</span>'; } else { oc.style.display='none'; } } })();
       var head='<div class="grid" style="margin-bottom:12px;">'
         +'<div class="stat"><div class="n" style="color:var(--payout);">'+money(owed)+'</div><div class="l">Owed to you</div></div>'
         +'<div class="stat"><div class="n">'+money(life)+'</div><div class="l">Lifetime earned</div></div>'
