@@ -967,6 +967,15 @@
     <div id="asub-special" class="asub-panel mgr-only" style="display:none;"><div class="card"><h2>🧩 Special accounts</h2><p class="sub" style="margin:-6px 0 12px;">Utility accounts for testing, house / POD items, and collaborative works — kept separate from your artist roster. (COL, TST, DA, UNASSIGNED / POD)</p><div id="specialList"></div><p class="sub" id="specialEmpty">No special accounts.</p></div></div>
       </div>
   <div id="tab-utilities" class="tabpanel">
+  <div class="card mgr-only" style="border-color:var(--good);">
+    <h2 style="display:flex;align-items:center;gap:8px;">✉️ Invite a user</h2>
+    <p class="sub" style="margin:-6px 0 12px;">Send a Guild invite straight to someone's email — no application needed. They'll get the branded invite to set a password and sign in.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <input type="email" id="inviteEmail" placeholder="artist@example.com" style="min-width:260px;flex:1 1 260px;" onkeydown="if(event.key==='Enter'){event.preventDefault();daInviteEmail();}">
+      <button class="btn sm" id="inviteBtn" onclick="daInviteEmail()">Send invite</button>
+    </div>
+    <div id="inviteMsg" class="sub" style="margin:8px 0 0;min-height:16px;"></div>
+  </div>
   <div class="card mgr-only" style="border-color:var(--accent2);">
     <h2 style="display:flex;align-items:center;gap:8px;">🧰 Data &amp; tools</h2>
     <p class="sub" style="margin:-6px 0 12px;">Import and export your catalog, push to Shopify, print barcodes, and load starter data — these used to sit in the top bar.</p>
@@ -2735,6 +2744,30 @@ window.daSetRequest=function(id,status,note){
   });
 };
 window.daEmailReq=function(id){ var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return; window.location.href='mailto:'+q.email+'?subject='+encodeURIComponent('Digital Alchemists — your application'); };
+window.daInviteEmail=async function(){
+  var el=document.getElementById('inviteEmail');
+  var msg=document.getElementById('inviteMsg');
+  var btn=document.getElementById('inviteBtn');
+  var email=((el&&el.value)||'').trim();
+  var toast=window.showToast||window.alert;
+  function setMsg(t,c){ if(msg){ msg.textContent=t; msg.style.color=c||'var(--muted)'; } }
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ setMsg('Enter a valid email address.','var(--warn)'); return; }
+  try{
+    var sess=await window.daSB.auth.getSession();
+    var token=sess.data&&sess.data.session&&sess.data.session.access_token;
+    if(!token){ toast('Please sign in again.'); return; }
+    if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+    setMsg('Sending invite to '+email+'…','var(--muted)');
+    var base=window.DA_SUPABASE_URL.replace(/\/$/,'');
+    var r=await fetch(base+'/functions/v1/invite-user',{ method:'POST',
+      headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':window.DA_SUPABASE_ANON },
+      body:JSON.stringify({ email:email }) });
+    var j=await r.json().catch(function(){ return {}; });
+    if(r.ok&&j.ok){ if(el)el.value=''; setMsg('✓ Invite sent to '+email+'.','var(--good)'); toast('Invite sent to '+email+'.'); }
+    else { setMsg('Invite failed: '+(j.error||('HTTP '+r.status)),'var(--warn)'); toast('Invite failed: '+(j.error||('HTTP '+r.status))); }
+  }catch(e){ setMsg('Invite error: '+((e&&e.message)||e),'var(--warn)'); }
+  finally{ if(btn){ btn.disabled=false; btn.textContent='Send invite'; } }
+};
 window.daInviteReq=async function(id){
   var q=(window.daRequests||[]).filter(function(x){ return x.id===id; })[0]; if(!q) return;
   var toast=window.showToast||window.alert;
