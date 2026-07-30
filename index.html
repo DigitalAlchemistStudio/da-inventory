@@ -2247,6 +2247,7 @@ window.daOnAvatarFile = function(ev){
         var ba=document.getElementById('bArtist'); if(ba) ba.value=(prof.display_name||'')+' ('+(prof.artist_code||'?')+')';
         window.DA_ARTIST = prof.artist_code||'';
         window.DA_IS_MANAGER = !!prof.is_manager;
+        if(!prof.is_manager && !prof.onboarding_complete && window.daShowOnboarding){ window.daShowOnboarding(); }
       if(prof.is_manager && window.daLoadRequests){ window.daLoadRequests(); }
       if(window.daLoadResources){ window.daLoadResources(); }
       if(window.daLoadDocs){ window.daLoadDocs(); }
@@ -2406,6 +2407,7 @@ window.daOnAvatarFile = function(ev){
     if(!plan.art){ alert('No artist code found on your account.'); return; }
     if(!plan.col.code){ alert('Pick or name a collection.'); return; }
     if(!plan.list.length){ alert('Pick at least one product.'); return; }
+    if(window.daActivationGate && !window.daActivationGate()) return;
     var btn=$('bGenerate'); btn.disabled=true; btn.textContent='Working…';
     var ensureCol = plan.col.isNew ? window.daAddCollection(plan.col.name||plan.col.code, plan.col.code) : Promise.resolve(plan.col.code);
     ensureCol.then(function(code){ return uploadDesign(title, code, plan.art).then(function(design){ return {code:code, design:design}; }); })
@@ -2497,7 +2499,7 @@ function daShareFor(it){
 function artistEarn(it){ var z=(Number(it.price)||0)-(Number(it.cost)||0); if(z<0)z=0; return z*daShareFor(it); }
 window.daLoadProfiles=function(){
   if(!window.daSB) return Promise.resolve();
-  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email,real_name').then(function(r){
+  return window.daSB.from('profiles').select('id,artist_code,display_name,artist_share,email,real_name,code_status,proposed_code,onboarding_complete,bio,socials,mediums,portfolio_url').then(function(r){
     if(r.error){ console.error(r.error); return; }
     window.daProfilesAll=r.data||[];
     window.daShareMap={};
@@ -3518,5 +3520,185 @@ window.daRenderAllArtistDocs=function(){
   };
 })();
 </script>
+<script>
+/* ===================== Artist onboarding + activation soft-gate (2026-07-30) ===================== */
+(function(){
+  function esc2(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function toast(m,t){ (window.showToast||window.notify||window.alert)(m,t); }
+
+  /* --- activation helpers --- */
+  window.daArtistSignedAll=function(code){
+    if(!code) return false;
+    return (window.DA_DOCS||[]).every(function(dd){ var r=(typeof daDocRow==='function')?daDocRow(code,dd.key):null; return !!(r&&r.artist_signed); });
+  };
+  window.daActivationState=function(){
+    if(window.DA_IS_MANAGER) return {ok:true,needs:[]};
+    var p=window.daProfile||{};
+    var code=(p.artist_code||window.DA_ARTIST||'');
+    var approved = !!(code && p.code_status==='approved');
+    var signed = !!(code && window.daArtistSignedAll(code));
+    var needs=[];
+    if(!p.onboarding_complete) needs.push('complete your artist profile');
+    else if(!approved) needs.push('wait for a manager to approve your artist code');
+    if(approved && !signed) needs.push('sign your agreements in the Documents tab');
+    return { ok:(approved&&signed), approved:approved, signed:signed, code:code, needs:needs };
+  };
+
+  /* ===================== Onboarding overlay ===================== */
+  function fieldText(id,label,hint){
+    return '<label style="display:block;font-size:12px;color:var(--muted,#8aa6cc);margin-top:10px;">'+label+'</label>'
+      +(hint?'<div style="font-size:11px;color:var(--muted,#8aa6cc);opacity:.8;">'+hint+'</div>':'')
+      +'<input id="'+id+'" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 2px;box-sizing:border-box;">';
+  }
+  function fieldArea(id,label,hint){
+    return '<label style="display:block;font-size:12px;color:var(--muted,#8aa6cc);margin-top:10px;">'+label+'</label>'
+      +(hint?'<div style="font-size:11px;color:var(--muted,#8aa6cc);opacity:.8;">'+hint+'</div>':'')
+      +'<textarea id="'+id+'" rows="3" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 2px;box-sizing:border-box;resize:vertical;"></textarea>';
+  }
+  function fieldCode(){
+    return '<label style="display:block;font-size:12px;color:var(--muted,#8aa6cc);margin-top:10px;">Proposed artist code (2&ndash;4 letters)</label>'
+      +'<div style="font-size:11px;color:var(--muted,#8aa6cc);opacity:.8;">Appears in every one of your SKUs, e.g. <b>WEY</b>-ACC-… A manager confirms or adjusts it.</div>'
+      +'<input id="onbCode" maxlength="4" style="width:130px;text-transform:uppercase;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 2px;">';
+  }
+  function buildOverlay(){
+    if(document.getElementById('onbGate')) return;
+    var o=document.createElement('div'); o.id='onbGate';
+    o.style.cssText='position:fixed;inset:0;z-index:10050;display:none;align-items:flex-start;justify-content:center;background:rgba(4,12,24,.92);padding:24px;overflow:auto;';
+    o.innerHTML=''
+     +'<div style="width:100%;max-width:620px;background:var(--panel,#102647);border:1px solid var(--border,#1E3E6E);border-radius:16px;padding:26px 26px 22px;box-shadow:0 20px 60px rgba(0,0,0,.55);color:var(--text,#e7f2fb);margin:12px 0;">'
+      +'<h2 style="margin:0 0 4px;font-size:22px;">Welcome to the Guild ✨</h2>'
+      +'<p style="margin:0 0 16px;color:var(--muted,#8aa6cc);font-size:13.5px;line-height:1.5;">Complete your artist profile to get set up. A manager reviews your proposed artist code, then you sign your agreements to activate your account.</p>'
+      +fieldText('onbName','Display name / handle','Shown across the app and your storefront')
+      +fieldText('onbReal','Legal name (private)','For records &amp; payouts only — never shown publicly')
+      +fieldCode()
+      +fieldArea('onbBio','Short bio','A sentence or two about you and your work')
+      +fieldText('onbMediums','Mediums','e.g. digital illustration, watercolor, 3D')
+      +fieldText('onbPortfolio','Portfolio / website URL','')
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+        +fieldText('onbInsta','Instagram','@handle or URL')
+        +fieldText('onbTwitter','X / Twitter','@handle or URL')
+        +fieldText('onbTiktok','TikTok','@handle or URL')
+        +fieldText('onbOther','Other link','')
+      +'</div>'
+      +'<div id="onbErr" style="color:var(--bad,#e05c5c);font-size:12.5px;min-height:16px;margin:8px 0 2px;"></div>'
+      +'<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px;">'
+        +'<a href="#" onclick="if(window.daSB){window.daSB.auth.signOut().then(function(){location.reload();});}return false;" style="color:var(--muted,#8aa6cc);font-size:12.5px;">Sign out</a>'
+        +'<button class="btn" id="onbSubmit" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daOnboardingSubmit()">Submit profile</button>'
+      +'</div>'
+     +'</div>';
+    document.body.appendChild(o);
+    var ci=document.getElementById('onbCode'); if(ci){ ci.addEventListener('input',function(){ this.value=this.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4); }); }
+  }
+  window.daShowOnboarding=function(){
+    buildOverlay();
+    var p=window.daProfile||{};
+    function v(id,val){ var e=document.getElementById(id); if(e&&val!=null) e.value=val; }
+    v('onbName', p.display_name || (p.email||'').split('@')[0] || '');
+    v('onbReal', p.real_name||'');
+    v('onbBio', p.bio||'');
+    v('onbMediums', p.mediums||'');
+    v('onbPortfolio', p.portfolio_url||'');
+    var s=p.socials||{}; v('onbInsta',s.instagram||''); v('onbTwitter',s.twitter||''); v('onbTiktok',s.tiktok||''); v('onbOther',s.other||'');
+    var cc=document.getElementById('onbCode');
+    if(cc && !cc.value){ cc.value=((p.proposed_code||(p.display_name||p.email||'')).replace(/[^A-Za-z]/g,'').slice(0,3)||'').toUpperCase(); }
+    document.getElementById('onbGate').style.display='flex';
+  };
+  window.daOnboardingSubmit=function(){
+    var g=function(id){ var e=document.getElementById(id); return e?e.value.trim():''; };
+    var name=g('onbName'), code=g('onbCode').toUpperCase().replace(/[^A-Z]/g,'');
+    var err=document.getElementById('onbErr'); if(err) err.textContent='';
+    if(!name){ if(err) err.textContent='Please enter a display name.'; return; }
+    if(code.length<2){ if(err) err.textContent='Proposed artist code must be 2–4 letters.'; return; }
+    if(!window.daSB || !window.daProfile || !window.daProfile.id){ if(err) err.textContent='Not signed in.'; return; }
+    var socials={ instagram:g('onbInsta'), twitter:g('onbTwitter'), tiktok:g('onbTiktok'), other:g('onbOther') };
+    var payload={ id:window.daProfile.id, email:window.daProfile.email||null, display_name:name, real_name:g('onbReal')||null,
+      bio:g('onbBio')||null, mediums:g('onbMediums')||null, portfolio_url:g('onbPortfolio')||null, socials:socials,
+      proposed_code:code, code_status:'pending', onboarding_complete:true };
+    var btn=document.getElementById('onbSubmit'); if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+    window.daSB.from('profiles').upsert(payload,{onConflict:'id'}).then(function(r){
+      if(btn){ btn.disabled=false; btn.textContent='Submit profile'; }
+      if(r.error){ if(err) err.textContent='Save failed: '+(r.error.message||r.error); return; }
+      Object.keys(payload).forEach(function(k){ window.daProfile[k]=payload[k]; });
+      var ov=document.getElementById('onbGate'); if(ov) ov.style.display='none';
+      if(window.daRenderAcct) window.daRenderAcct();
+      if(window.daRenderActivation) window.daRenderActivation();
+      toast('Profile submitted! A manager will approve your artist code shortly.','success');
+    });
+  };
+
+  /* ===================== Builder activation banner (soft gate) ===================== */
+  window.daRenderActivation=function(){
+    var host=document.getElementById('tab-manager'); if(!host) return;
+    var bar=document.getElementById('daActivationBar');
+    var st=window.daActivationState();
+    if(!st || st.ok || window.DA_IS_MANAGER){ if(bar) bar.remove(); return; }
+    if(!bar){ bar=document.createElement('div'); bar.id='daActivationBar'; bar.style.cssText='margin:0 0 14px;padding:12px 14px;border-radius:10px;border:1px solid #b7791f;background:rgba(183,121,31,.14);color:var(--text,#e7f2fb);font-size:13px;line-height:1.5;'; host.insertBefore(bar, host.firstChild); }
+    var items=(st.needs||[]).map(function(n){ return '<li>'+esc2(n)+'</li>'; }).join('');
+    bar.innerHTML='<b>⚠ Your account isn’t fully activated yet.</b> To publish products you still need to:<ul style="margin:6px 0 0;padding-left:18px;">'+items+'</ul>'
+      + (st.approved? '<div style="margin-top:8px;"><a href="#" onclick="if(window.switchTab)switchTab(\'documents\');return false;" style="color:var(--accent,#07A5C0);font-weight:600;">Go to Documents →</a></div>':'');
+  };
+  window.daActivationGate=function(){
+    if(window.DA_IS_MANAGER) return true;
+    var st=window.daActivationState();
+    if(st.ok) return true;
+    var msg='Your account isn’t fully activated yet — you still need to '+ (st.needs||['finish setup']).join(', and ') +'.\n\nYou can keep building, but your products won’t be published until this is done. Continue anyway?';
+    if(window.confirm(msg)) return true;
+    if(window.switchTab && st.approved) window.switchTab('documents');
+    return false;
+  };
+
+  /* ===================== Manager: pending code approvals ===================== */
+  window.daRenderPendingCodes=function(){
+    var host=document.getElementById('tab-applications'); if(!host || !window.DA_IS_MANAGER) return;
+    var box=document.getElementById('daPendingCodes');
+    if(!box){ box=document.createElement('div'); box.id='daPendingCodes'; box.style.cssText='margin:0 0 18px;'; host.insertBefore(box, host.firstChild); }
+    var pend=(window.daProfilesAll||[]).filter(function(p){ return p.code_status==='pending' && p.onboarding_complete; });
+    if(!pend.length){ box.innerHTML=''; return; }
+    var cards=pend.map(function(p){
+      var s=p.socials||{}; var links=['instagram','twitter','tiktok','other'].map(function(k){ return s[k]?('<span style="margin-right:10px;">'+esc2(k)+': '+esc2(s[k])+'</span>'):''; }).join('');
+      return '<div style="border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);border-radius:10px;padding:14px;margin-bottom:10px;">'
+        +'<div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline;">'
+          +'<div><b style="font-size:15px;">'+esc2(p.display_name||'(no name)')+'</b>'+(p.real_name?' <span style="color:var(--muted,#8aa6cc);font-size:12px;">('+esc2(p.real_name)+')</span>':'')+'<div style="color:var(--muted,#8aa6cc);font-size:12px;">'+esc2(p.email||'')+'</div></div>'
+          +'<div style="display:flex;gap:8px;align-items:center;">'
+            +'<span style="font-size:12px;color:var(--muted,#8aa6cc);">Code</span>'
+            +'<input id="pc_'+p.id+'" value="'+esc2((p.proposed_code||'').toUpperCase())+'" maxlength="4" style="width:90px;text-transform:uppercase;padding:7px 9px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel,#102647);color:inherit;">'
+            +'<button class="btn sm" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daApproveCode(\''+p.id+'\')">Approve</button>'
+          +'</div>'
+        +'</div>'
+        +(p.bio?'<div style="margin-top:8px;font-size:13px;">'+esc2(p.bio)+'</div>':'')
+        +(p.mediums?'<div style="margin-top:6px;font-size:12px;color:var(--muted,#8aa6cc);">Mediums: '+esc2(p.mediums)+'</div>':'')
+        +(p.portfolio_url?'<div style="margin-top:4px;font-size:12px;">Portfolio: '+esc2(p.portfolio_url)+'</div>':'')
+        +(links?'<div style="margin-top:4px;font-size:12px;color:var(--muted,#8aa6cc);">'+links+'</div>':'')
+      +'</div>';
+    }).join('');
+    box.innerHTML='<h3 style="margin:0 0 8px;">Pending artist approvals <span class="pill warn">'+pend.length+'</span></h3>'+cards;
+  };
+  window.daApproveCode=function(id){
+    var p=(window.daProfilesAll||[]).filter(function(x){ return x.id===id; })[0]; if(!p){ toast('Profile not found.','error'); return; }
+    var inp=document.getElementById('pc_'+id); var code=((inp?inp.value:p.proposed_code)||'').toUpperCase().replace(/[^A-Z]/g,'');
+    if(code.length<2){ toast('Code must be 2–4 letters.','error'); return; }
+    var taken=(window.daProfilesAll||[]).some(function(x){ return x.id!==id && (x.artist_code||'').toUpperCase()===code; });
+    if(taken){ toast('Code '+code+' is already in use.','error'); return; }
+    window.daSB.from('profiles').update({ artist_code:code, code_status:'approved' }).eq('id',id).then(function(r){
+      if(r.error){ toast('Approve failed: '+(r.error.message||r.error),'error'); return; }
+      p.artist_code=code; p.code_status='approved';
+      window.daSB.from('artists').upsert({ code:code, display_name:p.display_name||null, real_name:p.real_name||null, updated_at:new Date().toISOString() },{onConflict:'code'}).then(function(){});
+      window.daArtistMeta=window.daArtistMeta||{}; window.daArtistMeta[code]={display_name:p.display_name||'',real_name:p.real_name||''};
+      if(window.daShareMap) window.daShareMap[code]=(p.artist_share!=null?p.artist_share:0.40);
+      toast('Approved '+(p.display_name||code)+' as '+code+'.','success');
+      if(window.daLoadProfiles) window.daLoadProfiles();
+      if(window.daRenderPendingCodes) window.daRenderPendingCodes();
+      if(window.daRenderArtists) window.daRenderArtists();
+    });
+  };
+
+  /* ===================== hook renders into existing load cycles ===================== */
+  var _ra=window.daRenderArtists;
+  if(typeof _ra==='function'){ window.daRenderArtists=function(){ var r=_ra.apply(this,arguments); try{ if(window.daRenderPendingCodes) window.daRenderPendingCodes(); }catch(e){} return r; }; }
+  var _rd=window.daRenderMyDocs;
+  if(typeof _rd==='function'){ window.daRenderMyDocs=function(){ var r=_rd.apply(this,arguments); try{ if(window.daRenderActivation) window.daRenderActivation(); }catch(e){} return r; }; }
+})();
+</script>
+
 </body>
 </html>
