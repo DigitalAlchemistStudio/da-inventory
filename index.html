@@ -106,7 +106,7 @@
   .btn.danger{background:transparent;border:1px solid var(--bad);color:var(--bad);box-shadow:none;}
   .btn.danger:hover{background:var(--bad);color:#fff;filter:none;}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
-  .toolbar input[type=search]{flex:1;min-width:200px;} @media(max-width:640px){ .toolbar{flex-direction:column;align-items:stretch;gap:10px;} .toolbar>input[type=search],.toolbar>label,.toolbar>.ship-cfg,.toolbar>button{width:100%;box-sizing:border-box;} .toolbar input[type=search]{min-width:0;} .toolbar label{justify-content:flex-start;} .toolbar label select{flex:1;min-width:0;margin-left:8px;} .toolbar>#sortDirBtn{width:auto;align-self:flex-start;} }
+  .toolbar input[type=search]{flex:1;min-width:200px;} @media(max-width:640px){ .toolbar{flex-direction:column;align-items:stretch;gap:10px;} .toolbar>input[type=search],.toolbar>label,.toolbar>.ship-cfg,.toolbar>.sort-group,.toolbar>button{width:100%;box-sizing:border-box;} .toolbar input[type=search]{min-width:0;} .toolbar>label{justify-content:flex-start;} .toolbar>label>select{flex:1;min-width:0;margin-left:8px;} .toolbar .sort-group{display:flex;gap:8px;align-items:center;} .toolbar .sort-group>label{flex:1;justify-content:flex-start;} .toolbar .sort-group select{flex:1;min-width:0;margin-left:8px;} .toolbar .sort-group>#sortDirBtn{flex:0 0 auto;} .toolbar>.ship-cfg{font-size:13px;flex-wrap:wrap;gap:8px;align-items:center;} .toolbar>.ship-cfg input{width:82px !important;font-size:13px;padding:6px 8px;} }
   .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
   thead th{position:sticky;top:0;background:var(--panel);z-index:2;box-shadow:inset 0 -1px 0 var(--border);}
   table{border-collapse:collapse;width:100%;font-size:13px;min-width:820px;}
@@ -562,8 +562,8 @@
     <h2 id="listTitle">Master list</h2>
     <div class="toolbar">
       <input type="search" id="search" placeholder="Search artist, title, SKU, vendor..." oninput="render()"><label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Artist <select id="artistFilter" onchange="render()"><option value="">All artists</option></select></label>
-      <label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Sort by <select id="sortSel" onchange="setSort(this.value)"><option value="artist">Artist</option><option value="title">Illustration / Title</option><option value="sku">SKU</option><option value="size">Size</option><option value="vendor">Vendor</option><option value="price">Price</option><option value="qty">Qty</option><option value="margin">Margin %</option></select></label>
-      <button class="btn ghost sm" id="sortDirBtn" onclick="toggleSortDir()" title="Ascending / descending">▲</button>
+      <span class="sort-group" style="display:inline-flex;gap:6px;align-items:center;"><label style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:5px;">Sort by <select id="sortSel" onchange="setSort(this.value)"><option value="artist">Artist</option><option value="title">Illustration / Title</option><option value="sku">SKU</option><option value="size">Size</option><option value="vendor">Vendor</option><option value="price">Price</option><option value="qty">Qty</option><option value="margin">Margin %</option></select></label>
+      <button class="btn ghost sm" id="sortDirBtn" onclick="toggleSortDir()" title="Ascending / descending">▲</button></span>
       <span class="ship-cfg" style="font-size:12px;color:#555;display:inline-flex;align-items:center;gap:4px;">Ship est: base $<input type="number" id="shipBase" value="1.00" step="0.25" min="0" style="width:58px" oninput="saveShipCfg();render()"> + $<input type="number" id="shipRate" value="0.20" step="0.05" min="0" style="width:52px" oninput="saveShipCfg();render()">/oz</span>
       <button class="btn ghost sm" onclick="clearAll()">Clear all data</button>
     </div>
