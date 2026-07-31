@@ -106,7 +106,7 @@
   .btn.danger{background:transparent;border:1px solid var(--bad);color:var(--bad);box-shadow:none;}
   .btn.danger:hover{background:var(--bad);color:#fff;filter:none;}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
-  .toolbar input[type=search]{flex:1;min-width:200px;}
+  .toolbar input[type=search]{flex:1;min-width:200px;} @media(max-width:640px){ .toolbar{flex-direction:column;align-items:stretch;gap:10px;} .toolbar>input[type=search],.toolbar>label,.toolbar>.ship-cfg,.toolbar>button{width:100%;box-sizing:border-box;} .toolbar input[type=search]{min-width:0;} .toolbar label{justify-content:flex-start;} .toolbar label select{flex:1;min-width:0;margin-left:8px;} .toolbar>#sortDirBtn{width:auto;align-self:flex-start;} }
   .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;}
   thead th{position:sticky;top:0;background:var(--panel);z-index:2;box-shadow:inset 0 -1px 0 var(--border);}
   table{border-collapse:collapse;width:100%;font-size:13px;min-width:820px;}
