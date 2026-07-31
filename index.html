@@ -2208,6 +2208,7 @@ if(typeof resetForm!=='undefined'){ var _rfBC=resetForm; resetForm=function(){ _
   chip.innerHTML = '<span id="daAvatarBtn" title="Upload / change avatar" onclick="daPickAvatar()" style="width:100px;height:100px;border-radius:18px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;background:var(--panel2,#0a2c46);border:1px solid var(--accent2,#56CCDA);cursor:pointer;font-size:36px;font-weight:800;color:var(--accent2,#56CCDA);flex:none;">'+inner+'</span>'
     +'<span style="display:inline-flex;flex-direction:column;justify-content:center;gap:5px;line-height:1.2;">'
       +'<span style="font-size:28px;"><b>'+esc(prof.display_name||'Artist')+'</b><span class="code" style="margin-left:8px;vertical-align:middle;">'+esc(prof.artist_code||'?')+'</span></span>'
+      +'<span style="font-size:12px;color:var(--accent2,#56CCDA);text-transform:capitalize;letter-spacing:.03em;font-weight:600;">'+esc(prof.role||'artist')+'</span>'
       +'<span id="owedChip" style="display:none;"></span>'
       +'<span id="acctSync" style="color:var(--muted);font-size:11px;"></span>'
     +'</span>';
@@ -3723,7 +3724,7 @@ window.daRenderAllArtistDocs=function(){
       +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Login email</label>'
       +'<div style="display:flex;gap:8px;margin:4px 0 12px;">'
         +'<input id="aeEmail" type="email" style="flex:1;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;">'
-        +'<button class="btn sm" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daAdminChangeEmail()">Change</button>'
+        +'<button class="btn sm" id="aeEmailBtn" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daAdminChangeEmail()">Change</button>'
       +'</div>'
       +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Role</label>'
       +'<div id="aeRoleWrap" style="display:flex;gap:14px;margin:6px 0 2px;flex-wrap:wrap;font-size:13px;">'
@@ -3757,10 +3758,11 @@ window.daRenderAllArtistDocs=function(){
       // section only usable for real accounts
       var hasAccount=!!(st.id && prof);
       box.style.display=(isAdminUser)?'':'none';
-      var em=document.getElementById('aeEmail'); if(em){ em.value=prof?(prof.email||''):''; em.disabled=!hasAccount; }
       var role=(prof&&prof.role)||'artist';
+      var isTargetAdmin=(role==='admin')||(!!prof&&(prof.email||'').toLowerCase()===ADMIN_EMAIL);
+      var em=document.getElementById('aeEmail'); if(em){ em.value=prof?(prof.email||''):''; em.disabled=(!hasAccount||isTargetAdmin); }
+      var eb=document.getElementById('aeEmailBtn'); if(eb){ eb.disabled=(!hasAccount||isTargetAdmin); eb.style.opacity=(!hasAccount||isTargetAdmin)?'.5':''; }
       var radios=box.querySelectorAll('input[name=aeRoleR]');
-      var isTargetAdmin=(role==='admin');
       radios.forEach(function(r){ r.checked=(r.value===role); r.disabled=(!hasAccount||isTargetAdmin); });
       var note=document.getElementById('aeRoleNote');
       var saveBtn=document.getElementById('aeRoleSave');
