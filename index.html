@@ -3145,7 +3145,7 @@ window.daRenderMyDocs=function(){
     function dot(v){ return v?'<span class="doc-yes">✓</span>':'<span class="doc-no">—</span>'; }
     var file = r.file_path ? '<a href="#" onclick="daDocDownload(\''+code+'\',\''+dd.key+'\');return false;">View signed copy</a>' : '<span style="color:var(--muted)">Not uploaded yet</span>';
     var dsb=(r.source==='docusign')?' <span class="ds-badge">DocuSign</span>':'';
-    return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+dot(r.artist_signed)+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+dsb+'</td></tr>';
+    return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+(r.artist_signed?dot(true):('<button class="btn ghost sm" onclick="daOpenSign(\''+dd.key+'\')" style="padding:2px 10px;">Sign</button>'))+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+dsb+'</td></tr>';
   }).join('');
   box.innerHTML=banner+'<div class="tablewrap"><table><thead><tr><th style="text-align:left;">Document</th><th>You signed</th><th>Company signed</th><th>Verified</th><th style="text-align:left;">File</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 };
@@ -3809,6 +3809,77 @@ window.daRenderAllArtistDocs=function(){
         if(r.ok&&j.ok){ (window.daProfilesAll||[]).forEach(function(p){ if(p.id===st.id) p.email=em; }); var ctx=document.getElementById('aeCtx'); if(ctx) ctx.textContent='Account: '+em; setMsg('✓ Login email changed to '+em+'.','var(--good,#2fbf71)'); toast('Login email updated.','success'); if(window.daLoadProfiles) window.daLoadProfiles(); }
         else { setMsg('Failed: '+(j.error||('HTTP '+r.status)),'var(--bad,#e05c5c)'); }
       }catch(e){ setMsg('Error: '+((e&&e.message)||e),'var(--bad,#e05c5c)'); }
+    })();
+  };
+})();
+</script>
+
+<script>
+/* ===================== In-app e-signature for artist agreements (2026-07-30) ===================== */
+(function(){
+  function toast(m,t){ (window.showToast||window.notify||window.alert)(m,t); }
+  function esc2(s){ return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  var DOC_TITLES={agreement:'Artist Agreement',ip:'IP / Licensing Agreement',payment:'Payment Terms',nda:'NDA / Confidentiality'};
+
+  function buildModal(){
+    if(document.getElementById('signGate')) return;
+    var o=document.createElement('div'); o.id='signGate';
+    o.style.cssText='position:fixed;inset:0;z-index:10060;display:none;align-items:center;justify-content:center;background:rgba(4,12,24,.85);padding:20px;';
+    o.innerHTML='<div style="width:100%;max-width:520px;background:var(--panel,#102647);border:1px solid var(--border,#1E3E6E);border-radius:14px;padding:22px;color:var(--text,#e7f2fb);box-shadow:0 16px 50px rgba(0,0,0,.5);">'
+      +'<h3 id="signTitle" style="margin:0 0 6px;">Sign document</h3>'
+      +'<div id="signView" style="font-size:12.5px;margin:0 0 12px;"></div>'
+      +'<div style="font-size:12.5px;color:var(--muted,#8aa6cc);line-height:1.5;margin-bottom:12px;">By typing your full legal name and clicking <b>Sign &amp; Agree</b>, you are electronically signing this document and agree to be bound by its terms. Your name, the date &amp; time, and your device info are recorded as your signature.</div>'
+      +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="signAgree" style="margin-top:3px;"> <span>I have read and agree to this document.</span></label>'
+      +'<label style="font-size:12px;color:var(--muted,#8aa6cc);">Type your full legal name</label>'
+      +'<input id="signName" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--border,#1E3E6E);background:var(--panel2,#16305A);color:inherit;margin:4px 0 6px;box-sizing:border-box;">'
+      +'<div id="signErr" style="color:var(--bad,#e05c5c);font-size:12.5px;min-height:15px;margin-bottom:8px;"></div>'
+      +'<div style="display:flex;gap:10px;justify-content:flex-end;">'
+        +'<button class="btn ghost sm" onclick="daCloseSign()">Cancel</button>'
+        +'<button class="btn sm" id="signBtn" style="background:var(--accent,#07A5C0);color:#04121f;font-weight:700;" onclick="daSignDoc()">Sign &amp; Agree</button>'
+      +'</div></div>';
+    document.body.appendChild(o);
+  }
+
+  var _signKey=null;
+  window.daOpenSign=function(key){
+    buildModal();
+    _signKey=key;
+    var p=window.daProfile||{};
+    document.getElementById('signTitle').textContent='Sign: '+(DOC_TITLES[key]||key);
+    var code=(p.artist_code||window.DA_ARTIST||'');
+    var r=(typeof daDocRow==='function')?daDocRow(code,key):null;
+    var vw=document.getElementById('signView');
+    if(r&&r.file_path){ vw.innerHTML='<a href="#" onclick="daDocDownload(\''+esc2(code)+'\',\''+esc2(key)+'\');return false;" style="color:var(--accent,#07A5C0);font-weight:600;">📄 View the document</a> before you sign.'; }
+    else { vw.innerHTML='<span style="color:var(--muted,#8aa6cc);">No document file is uploaded for this agreement yet — ask a manager to upload the '+esc2(DOC_TITLES[key]||key)+' if you want to review it first.</span>'; }
+    document.getElementById('signAgree').checked=false;
+    document.getElementById('signName').value=(p.real_name||p.display_name||'');
+    document.getElementById('signErr').textContent='';
+    document.getElementById('signGate').style.display='flex';
+  };
+  window.daCloseSign=function(){ var o=document.getElementById('signGate'); if(o) o.style.display='none'; _signKey=null; };
+
+  window.daSignDoc=function(){
+    var err=document.getElementById('signErr'); if(err) err.textContent='';
+    var key=_signKey;
+    var agree=document.getElementById('signAgree').checked;
+    var name=(document.getElementById('signName').value||'').trim();
+    if(!agree){ if(err) err.textContent='Please check the box to confirm you agree.'; return; }
+    if(name.length<2){ if(err) err.textContent='Please type your full legal name.'; return; }
+    if(!key){ if(err) err.textContent='No document selected.'; return; }
+    var btn=document.getElementById('signBtn'); if(btn){ btn.disabled=true; btn.textContent='Signing…'; }
+    (async function(){
+      try{
+        var sess=await window.daSB.auth.getSession();
+        var token=sess.data&&sess.data.session&&sess.data.session.access_token;
+        var base=(window.DA_SUPABASE_URL||'').replace(/\/$/,'');
+        var res=await fetch(base+'/functions/v1/sign-document',{ method:'POST',
+          headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':window.DA_SUPABASE_ANON },
+          body:JSON.stringify({ doc_key:key, name:name, agree:true }) });
+        var j=await res.json().catch(function(){ return {}; });
+        if(btn){ btn.disabled=false; btn.textContent='Sign & Agree'; }
+        if(res.ok&&j.ok){ daCloseSign(); toast('Signed: '+(DOC_TITLES[key]||key)+'.','success'); if(window.daLoadDocs) window.daLoadDocs(); }
+        else { if(err) err.textContent='Failed: '+(j.error||('HTTP '+res.status)); }
+      }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Sign & Agree'; } if(err) err.textContent='Error: '+((e&&e.message)||e); }
     })();
   };
 })();
