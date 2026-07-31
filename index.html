@@ -3143,7 +3143,7 @@ window.daRenderMyDocs=function(){
   var rows=DA_DOCS.map(function(dd){
     var r=daDocRow(code,dd.key)||{};
     function dot(v){ return v?'<span class="doc-yes">✓</span>':'<span class="doc-no">—</span>'; }
-    var file = r.file_path ? '<a href="#" onclick="daDocDownload(\''+code+'\',\''+dd.key+'\');return false;">View signed copy</a>' : '<a href="#" onclick="daMasterView(\''+dd.key+'\');return false;">View agreement</a>';
+    var file = r.file_path ? '<a href="#" onclick="daDocDownload(\''+code+'\',\''+dd.key+'\');return false;">View signed copy</a>' : '<span style="color:var(--muted)">—</span>';
     var dsb=(r.source==='docusign')?' <span class="ds-badge">DocuSign</span>':'';
     return '<tr><td style="text-align:left;">'+esc(dd.title)+'</td><td>'+(r.artist_signed?dot(true):('<button class="btn ghost sm" onclick="daOpenSign(\''+dd.key+'\')" style="padding:2px 10px;">Sign</button>'))+'</td><td>'+dot(r.company_signed)+'</td><td>'+dot(r.verified)+'</td><td style="text-align:left;">'+file+dsb+'</td></tr>';
   }).join('');
@@ -3849,7 +3849,7 @@ window.daRenderAllArtistDocs=function(){
     var code=(p.artist_code||window.DA_ARTIST||'');
     var r=(typeof daDocRow==='function')?daDocRow(code,key):null;
     var vw=document.getElementById('signView');
-    vw.innerHTML='<a href="#" onclick="daMasterView(\''+esc2(key)+'\');return false;" style="color:var(--accent,#07A5C0);font-weight:600;">📄 View the '+esc2(DOC_TITLES[key]||key)+'</a> before you sign.';
+    vw.innerHTML='<span style="color:var(--muted,#8aa6cc);">You are signing your <b>'+esc2(DOC_TITLES[key]||key)+'</b>. Please make sure you have reviewed the copy Digital Alchemists emailed you before you sign.</span>';
     document.getElementById('signAgree').checked=false;
     document.getElementById('signName').value=(p.real_name||p.display_name||'');
     document.getElementById('signErr').textContent='';
@@ -3884,18 +3884,5 @@ window.daRenderAllArtistDocs=function(){
 })();
 </script>
 
-<script>
-/* master agreement documents (viewable in the sign flow) */
-window.DA_DOC_MASTER={agreement:'_master/agreement.docx',ip:'_master/ip.docx',payment:'_master/payment.docx',nda:'_master/nda.docx'};
-window.daMasterView=function(key){
-  var p=(window.DA_DOC_MASTER||{})[key];
-  var toast=window.showToast||window.notify||window.alert;
-  if(!p||!window.daSB){ toast('No master document set for this agreement yet.'); return; }
-  window.daSB.storage.from('documents').createSignedUrl(p,300).then(function(s){
-    if(s.error){ toast('Could not open document: '+(s.error.message||s.error)); return; }
-    window.open(s.data.signedUrl,'_blank');
-  });
-};
-</script>
 </body>
 </html>
