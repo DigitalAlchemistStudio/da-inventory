@@ -2765,7 +2765,7 @@ window.daInviteEmail=async function(){
       headers:{ 'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':window.DA_SUPABASE_ANON },
       body:JSON.stringify({ email:email }) });
     var j=await r.json().catch(function(){ return {}; });
-    if(r.ok&&j.ok){ if(el)el.value=''; setMsg('✓ Invite sent to '+email+'.','var(--good)'); toast('Invite sent to '+email+'.'); }
+    if(r.ok&&j.ok){ if(el)el.value=''; var _m=j.reset?('✓ Password reset sent to '+email+' (already had an account).'):(j.resent?('✓ Invite re-sent to '+email+' (cleared a pending invite).'):('✓ Invite sent to '+email+'.')); setMsg(_m,'var(--good)'); toast(_m.replace('✓ ','')); }
     else { setMsg('Invite failed: '+(j.error||('HTTP '+r.status)),'var(--warn)'); toast('Invite failed: '+(j.error||('HTTP '+r.status))); }
   }catch(e){ setMsg('Invite error: '+((e&&e.message)||e),'var(--warn)'); }
   finally{ if(btn){ btn.disabled=false; btn.textContent='Send invite'; } }
@@ -2783,7 +2783,7 @@ window.daInviteReq=async function(id){
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token, 'apikey':window.DA_SUPABASE_ANON },
       body:JSON.stringify({ email:q.email, reqId:id }) });
     var j=await r.json().catch(function(){ return {}; });
-    if(r.ok && j.ok){ q.status='approved'; q.reviewed_at=new Date().toISOString(); daRenderRequests(); toast('Invite sent to '+q.email+' — they can now set a password and sign in.'); }
+    if(r.ok && j.ok){ q.status='approved'; q.reviewed_at=new Date().toISOString(); daRenderRequests(); var _m=j.reset?('Password reset sent to '+q.email+' (already had an account).'):(j.resent?('Invite re-sent to '+q.email+' — they can set a password and sign in.'):('Invite sent to '+q.email+' — they can now set a password and sign in.')); toast(_m); }
     else { toast('Invite failed: '+(j.error||('HTTP '+r.status))); }
   }catch(e){ toast('Invite error: '+(e.message||e)); }
 };
